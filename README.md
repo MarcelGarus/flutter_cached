@@ -1,6 +1,6 @@
 When building a screen that displays a cached list of items, there are many special cases to think about.
 
-For example, on [material.io](https://material.io), there are guidelines on [how to handle displaying offline data](https://material.io/design/communication/offline-states.html) and when to use [error banners](https://material.io/design/communication/confirmation-acknowledgement.html) or [empty states](https://material.io/design/communication/empty-states.html).
+For example, on [material.io](https://material.io) there are guidelines on [how to handle displaying offline data](https://material.io/design/communication/offline-states.html), how pull-to-refresh should be implemented and when to use [error banners](https://material.io/design/communication/confirmation-acknowledgement.html) or [empty states](https://material.io/design/communication/empty-states.html).
 
 This package tries to make implementing cached ListViews as easy as possible.
 
@@ -8,9 +8,9 @@ This package tries to make implementing cached ListViews as easy as possible.
 | ----------------------------- | --------------------------------------- | --------------------------- |
 | ![](screenshot_loading.png)   | ![](screenshot_loading_with_cached.png) | ![](screenshot_success.png) |
 
-| error with no data in cache      | error with data in cache             | no data available               |
-| -------------------------------- | ------------------------------------ | ------------------------------- |
-| ![](screenshot_banner_error.png) | ![](screenshot_fullscreen_error.png) | ![](screenshot_empty_state.png) |
+| error with no data in cache          | error with data in cache         | no data available               |
+| ------------------------------------ | -------------------------------- | ------------------------------- |
+| ![](screenshot_fullscreen_error.png) | ![](screenshot_banner_error.png) | ![](screenshot_empty_state.png) |
 
 ## Usage
 
