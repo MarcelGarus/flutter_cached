@@ -39,7 +39,7 @@ class _MyContentState extends State<MyContent> {
         if (random.nextBool()) {
           throw UnsupportedError('Oh no! Something terrible happened.');
         }
-        return List.generate(random.nextInt(3), (i) => random.nextInt(10));
+        return List.generate(random.nextInt(7), (i) => random.nextInt(10));
       },
       loadFromCache: () async {
         if (inMemoryCache == null) {
@@ -62,9 +62,13 @@ class _MyContentState extends State<MyContent> {
         return Material(
           color: Colors.red,
           elevation: 4,
-          child: Text(
-            'An error occurred while fetching the latest numbers: $error',
-            style: TextStyle(color: Colors.white),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Text(
+              "An error occurred while fetching the latest numbers.\n"
+              "You're currently seeing a cached version.",
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         );
       },
@@ -74,16 +78,16 @@ class _MyContentState extends State<MyContent> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.error_outline),
-              Text('Oh no!\n$error'),
+              SizedBox(height: 8),
+              Text(
+                'Oh no!\nSomething terrible happened!',
+                textAlign: TextAlign.center,
+              ),
             ],
           ),
         );
       },
-      emptyStateBuilder: (context) {
-        return Center(
-          child: Text('No numbers here.'),
-        );
-      },
+      emptyStateBuilder: (context) => Center(child: Text('No numbers here.')),
     );
   }
 }

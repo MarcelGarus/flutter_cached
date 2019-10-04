@@ -6,6 +6,8 @@ For example, on [material.io](https://material.io), there are guidelines on [how
 
 This package tries to make implementing cached ListViews as easy as possible.
 
+![behavior diagram](diagram.png)
+
 ## Usage
 
 First, create a `CacheManager`. This will be the class that orchestrates the fetching of data.
