@@ -1,0 +1,16 @@
+name: cached_listview
+description: 🧾 Flutter widget allowing easy cache-based data display in a ListView featuring pull-to-refresh and error banners.
+version: 0.0.1
+author: Marcel <marcel.garus@gmail.com>
+homepage: https://github.com/marcelgarus/cached_listview
+
+environment:
+  sdk: ">=2.0.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

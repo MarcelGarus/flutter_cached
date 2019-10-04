@@ -1,0 +1,14 @@
+name: example
+
+environment:
+  sdk: ">=2.2.2 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cached_listview:
+    path: ..
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
