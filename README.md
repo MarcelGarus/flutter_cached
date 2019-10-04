@@ -31,5 +31,6 @@ CachedListView(
   itemBuilder: (context, item) => ...,
   errorBannerBuilder: (context, error) => ...,
   errorScreenBuilder: (context, error) => ...,
+  emptyStateBuilder: (context) => ...,
 ),
 ```
