@@ -99,13 +99,13 @@ class CacheController<Item> {
   }
 }
 
-class CachedCustomScrollView extends StatefulWidget {
+class CachedCustomScrollView<Item> extends StatefulWidget {
   /// The corresponding [CacheController] that's used as a data provider.
-  final CacheController controller;
+  final CacheController<Item> controller;
 
   /// A function that receives raw [CacheUpdate]s and returns the slivers to
   /// build.
-  final List<Widget> Function(BuildContext context, CacheUpdate update)
+  final List<Widget> Function(BuildContext context, CacheUpdate<Item> update)
       sliverBuilder;
 
   CachedCustomScrollView({
@@ -115,12 +115,14 @@ class CachedCustomScrollView extends StatefulWidget {
         assert(sliverBuilder != null);
 
   @override
-  _CachedCustomScrollView createState() => _CachedCustomScrollView();
+  _CachedCustomScrollView<Item> createState() =>
+      _CachedCustomScrollView<Item>();
 }
 
-class _CachedCustomScrollView extends State<CachedCustomScrollView> {
+class _CachedCustomScrollView<Item>
+    extends State<CachedCustomScrollView<Item>> {
   final _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
-  CacheController _controller;
+  CacheController<Item> _controller;
 
   @override
   void didChangeDependencies() {
