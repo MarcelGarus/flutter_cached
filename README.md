@@ -1,5 +1,3 @@
-# cached_listview
-
 When building a screen that displays a cached list of items, there are many special cases to think about.
 
 For example, on [material.io](https://material.io), there are guidelines on [how to handle displaying offline data](https://material.io/design/communication/offline-states.html) and when to use [error banners](https://material.io/design/communication/confirmation-acknowledgement.html) or [empty states](https://material.io/design/communication/empty-states.html).
