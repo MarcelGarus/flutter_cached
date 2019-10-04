@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-/// The [CacheManager] creates [CacheUpdate]s to inform other classes about its
+/// The [CacheController] creates [CacheUpdate]s to inform other classes about its
 /// state of fetching data.
 @immutable
 class CacheUpdate<Item> {
@@ -30,8 +30,8 @@ class CacheUpdate<Item> {
 /// [fetch] on this class, you can start the process of fetching data
 /// simultaneously from the cache and the original source. To get updates about
 /// this process, you can listen to the [updates] stream.
-/// Call [dispose] after you're done using the [CacheManager].
-class CacheManager<Item> {
+/// Call [dispose] after you're done using the [CacheController].
+class CacheController<Item> {
   final Future<List<Item>> Function() fetcher;
   final Future<void> Function(List<Item> items) saveToCache;
   final Future<List<Item>> Function() loadFromCache;
@@ -40,7 +40,7 @@ class CacheManager<Item> {
   Stream<CacheUpdate> get updates => _updates.stream;
   List<Item> cachedData;
 
-  CacheManager({
+  CacheController({
     @required this.fetcher,
     @required this.saveToCache,
     @required this.loadFromCache,
@@ -99,9 +99,74 @@ class CacheManager<Item> {
   }
 }
 
-class CachedListView<Item> extends StatefulWidget {
-  /// The corresponding [CacheManager] that's used as a data provider.
-  final CacheManager<Item> manager;
+class CachedCustomScrollView extends StatefulWidget {
+  /// The corresponding [CacheController] that's used as a data provider.
+  final CacheController controller;
+
+  /// A function that receives raw [CacheUpdate]s and returns the slivers to
+  /// build.
+  final List<Widget> Function(BuildContext context, CacheUpdate update)
+      sliverBuilder;
+
+  CachedCustomScrollView({
+    @required this.controller,
+    @required this.sliverBuilder,
+  })  : assert(controller != null),
+        assert(sliverBuilder != null);
+
+  @override
+  _CachedCustomScrollView createState() => _CachedCustomScrollView();
+}
+
+class _CachedCustomScrollView extends State<CachedCustomScrollView> {
+  final _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
+  CacheController _controller;
+
+  @override
+  void didChangeDependencies() {
+    // When this widget is shown for the first time or the manager changed,
+    // trigger the [CacheManager]'s [fetch] function so we get some data.
+    if (widget.controller != _controller) {
+      _controller = widget.controller;
+      WidgetsBinding.instance.addPostFrameCallback(
+          (_) => _refreshIndicatorKey.currentState.show());
+    }
+    super.didChangeDependencies();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      key: _refreshIndicatorKey,
+      onRefresh: _controller.fetch,
+      child: StreamBuilder(
+        stream: _controller.updates,
+        builder: (context, snapshot) {
+          var update = snapshot.data;
+          var displayFullScreenLoader =
+              update == null || !update.hasData && !update.hasError;
+
+          return AnimatedCrossFade(
+            duration: Duration(milliseconds: 200),
+            crossFadeState: displayFullScreenLoader
+                ? CrossFadeState.showFirst
+                : CrossFadeState.showSecond,
+            firstChild: Center(child: CircularProgressIndicator()),
+            secondChild: displayFullScreenLoader
+                ? Container()
+                : CustomScrollView(
+                    slivers: widget.sliverBuilder(context, update),
+                  ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class CachedListView<Item> extends StatelessWidget {
+  /// The corresponding [CacheController] that's used as a data provider.
+  final CacheController<Item> controller;
 
   /// A builder for an [Item] to be displayed in the list.
   final Widget Function(BuildContext context, Item item) itemBuilder;
@@ -117,7 +182,7 @@ class CachedListView<Item> extends StatefulWidget {
 
   const CachedListView({
     Key key,
-    @required this.manager,
+    @required this.controller,
     @required this.itemBuilder,
     @required this.errorBannerBuilder,
     @required this.errorScreenBuilder,
@@ -125,103 +190,60 @@ class CachedListView<Item> extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _CachedListViewState createState() => _CachedListViewState<Item>();
-}
-
-class _CachedListViewState<Item> extends State<CachedListView<Item>> {
-  final _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
-  CacheManager _manager;
-
-  @override
-  void didChangeDependencies() {
-    // When this widget is shown for the first time or the manager changed,
-    // trigger the [CacheManager]'s [fetch] function so we get some data.
-    if (widget.manager != _manager) {
-      _manager = widget.manager;
-      WidgetsBinding.instance.addPostFrameCallback(
-          (_) => _refreshIndicatorKey.currentState.show());
-    }
-    super.didChangeDependencies();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      key: _refreshIndicatorKey,
-      onRefresh: _manager.fetch,
-      child: StreamBuilder(
-        stream: _manager.updates,
-        builder: (context, snapshot) {
-          var update = snapshot.data;
-          var displayFullScreenLoader =
-              update == null || !update.hasData && !update.hasError;
+    return CachedCustomScrollView(
+      controller: controller,
+      sliverBuilder: (context, update) {
+        assert(update.hasData || update.hasError);
 
-          return AnimatedCrossFade(
-            duration: Duration(milliseconds: 200),
-            crossFadeState: displayFullScreenLoader
-                ? CrossFadeState.showFirst
-                : CrossFadeState.showSecond,
-            firstChild: Center(child: CircularProgressIndicator()),
-            secondChild: displayFullScreenLoader
-                ? Container()
-                : CustomScrollView(slivers: _buildSlivers(context, update)),
-          );
-        },
-      ),
+        // If we're still loading, there can't be an error yet, so we are
+        // guaranteed to have cached data to be displayed.
+        if (update.isFetching) {
+          assert(update.hasData);
+          return [_buildItemsSliver(context, update.data)];
+        }
+
+        assert(!update.isFetching);
+
+        // If everything went successful, display the newly fetched data.
+        if (!update.hasError) {
+          assert(update.hasData);
+          return [_buildItemsSliver(context, update.data)];
+        }
+
+        assert(update.hasError);
+
+        // If we have cached data, display the error as a banner above
+        // the actual items. Otherwise, display a fullscreen error.
+        if (update.hasData) {
+          return [
+            SliverList(
+              delegate: SliverChildListDelegate([
+                errorBannerBuilder(context, update.error),
+              ]),
+            ),
+            _buildItemsSliver(context, update.data),
+          ];
+        } else {
+          return [
+            SliverFillViewport(
+              delegate: SliverChildListDelegate([
+                errorScreenBuilder(context, update.error),
+              ]),
+            ),
+          ];
+        }
+      },
     );
-  }
-
-  List<Widget> _buildSlivers(BuildContext context, CacheUpdate update) {
-    assert(update.hasData || update.hasError);
-
-    // If we're still loading, there can't be an error yet, so we are
-    // guaranteed to have cached data to be displayed.
-    if (update.isFetching) {
-      assert(update.hasData);
-      return [_buildItemsSliver(context, update.data)];
-    }
-
-    assert(!update.isFetching);
-
-    // If everything went successful, display the newly fetched data.
-    if (!update.hasError) {
-      assert(update.hasData);
-      return [_buildItemsSliver(context, update.data)];
-    }
-
-    assert(update.hasError);
-
-    // If we have cached data, display the error as a banner above
-    // the actual items. Otherwise, display a fullscreen error.
-    if (update.hasData) {
-      return [
-        SliverList(
-          delegate: SliverChildListDelegate([
-            widget.errorBannerBuilder(context, update.error),
-          ]),
-        ),
-        _buildItemsSliver(context, update.data),
-      ];
-    } else {
-      return [
-        SliverFillViewport(
-          delegate: SliverChildListDelegate([
-            widget.errorScreenBuilder(context, update.error),
-          ]),
-        ),
-      ];
-    }
   }
 
   Widget _buildItemsSliver(BuildContext context, List<Item> items) {
     if (items.isEmpty) {
-      return SliverFillRemaining(child: widget.emptyStateBuilder(context));
+      return SliverFillRemaining(child: emptyStateBuilder(context));
     } else {
       return SliverList(
         delegate: SliverChildBuilderDelegate((context, i) {
-          return (i >= items.length)
-              ? null
-              : widget.itemBuilder(context, items[i]);
+          return (i >= items.length) ? null : itemBuilder(context, items[i]);
         }),
       );
     }

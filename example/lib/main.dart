@@ -24,14 +24,14 @@ class MyContent extends StatefulWidget {
 
 class _MyContentState extends State<MyContent> {
   List<int> inMemoryCache;
-  CacheManager<int> manager;
+  CacheController<int> controller;
 
   @override
   void initState() {
     super.initState();
 
     var random = Random();
-    manager = CacheManager<int>(
+    controller = CacheController<int>(
       // The fetcher just waits and then either crashes or returns a list of
       // random numbers.
       fetcher: () async {
@@ -54,7 +54,7 @@ class _MyContentState extends State<MyContent> {
   @override
   Widget build(BuildContext context) {
     return CachedListView<int>(
-      manager: manager,
+      controller: controller,
       itemBuilder: (context, number) {
         return ListTile(title: Text('Number $number.'));
       },
