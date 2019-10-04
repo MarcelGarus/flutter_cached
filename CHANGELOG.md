@@ -1,3 +1,10 @@
+## [1.1.2] - 2019-10-05
+
+* `CachedListView` now takes either an `itemBuilder` for building the items
+  directly one after another in an index-agnostic deterministic way or it takes
+  an `itemSliverBuilder` for transforming all the items into slivers
+  simultaneously, allowing for changing the order, grouping etc of items.
+
 ## [1.1.1] - 2019-10-04
 
 * Fix type propagation for `CachedCustomScrollView`.
