@@ -100,27 +100,28 @@ class CacheManager<Item> {
 }
 
 class CachedListView<Item> extends StatefulWidget {
-  /// The corresponding [CacheManager] that's used.
+  /// The corresponding [CacheManager] that's used as a data provider.
   final CacheManager<Item> manager;
 
-  /// A function for turning an [Item] into a [Widget] to be displayed in the
-  /// list.
+  /// A builder for an [Item] to be displayed in the list.
   final Widget Function(BuildContext context, Item item) itemBuilder;
 
-  /// A function for displaying an [error] thrown by the [CacheManager]'s
-  /// [fetcher] as the first element of the list.
+  /// A builder for an [error] banner to be shown at the top of the list.
   final Widget Function(BuildContext context, dynamic error) errorBannerBuilder;
 
-  /// A function for displaying a full screen error message instead of the
-  /// list.
+  /// A builder for a full screen error message instead of the list.
   final Widget Function(BuildContext context, dynamic error) errorScreenBuilder;
+
+  /// A builder for what to display when there are no items.
+  final WidgetBuilder emptyStateBuilder;
 
   const CachedListView({
     Key key,
-    this.manager,
-    this.itemBuilder,
-    this.errorBannerBuilder,
-    this.errorScreenBuilder,
+    @required this.manager,
+    @required this.itemBuilder,
+    @required this.errorBannerBuilder,
+    @required this.errorScreenBuilder,
+    @required this.emptyStateBuilder,
   }) : super(key: key);
 
   @override
@@ -148,7 +149,7 @@ class _CachedListViewState<Item> extends State<CachedListView<Item>> {
     return RefreshIndicator(
       key: _refreshIndicatorKey,
       onRefresh: _manager.fetch,
-      child: StreamBuilder<CacheUpdate<Item>>(
+      child: StreamBuilder(
         stream: _manager.updates,
         builder: (context, snapshot) {
           var update = snapshot.data;
@@ -161,73 +162,68 @@ class _CachedListViewState<Item> extends State<CachedListView<Item>> {
                 ? CrossFadeState.showFirst
                 : CrossFadeState.showSecond,
             firstChild: Center(child: CircularProgressIndicator()),
-            secondChild: () {
-              // If the other child of the [AnimatedCrossFade] is visible, just
-              // return a placeholder.
-              if (displayFullScreenLoader) {
-                return Container();
-              }
-
-              assert(update.hasData || update.hasError);
-
-              // If we're still loading, there can't be an error yet, so we are
-              // guaranteed to have cached data to be displayed.
-              if (update.isFetching) {
-                assert(update.hasData);
-                return _buildList(context, update.data);
-              }
-
-              assert(!update.isFetching);
-
-              // If everything went successful, display the newly fetched data.
-              if (!update.hasError) {
-                assert(update.hasData);
-                return _buildList(context, update.data);
-              }
-
-              assert(update.hasError);
-
-              // If we have cached data, display the error as a banner above
-              // the actual items. Otherwise, display a fullscreen error.
-              if (update.hasData) {
-                return _buildList(
-                  context,
-                  update.data,
-                  errorBannerBuilder: widget.errorBannerBuilder,
-                  error: update.error,
-                );
-              } else {
-                return widget.errorScreenBuilder(context, update.error);
-              }
-            }(),
+            secondChild: displayFullScreenLoader
+                ? Container()
+                : CustomScrollView(slivers: _buildSlivers(context, update)),
           );
         },
       ),
     );
   }
 
-  Widget _buildList(
-    BuildContext context,
-    List<Item> items, {
-    Widget Function(BuildContext context, dynamic error) errorBannerBuilder,
-    dynamic error,
-  }) {
-    assert((errorBannerBuilder == null) == (error == null));
+  List<Widget> _buildSlivers(BuildContext context, CacheUpdate update) {
+    assert(update.hasData || update.hasError);
 
-    return ListView.builder(
-      itemBuilder: (context, i) {
-        if (error != null) {
-          if (i == 0) {
-            return errorBannerBuilder(context, error);
-          }
-          i--;
-        }
-        if (i >= items.length) {
-          return null;
-        } else {
-          return widget.itemBuilder(context, items[i]);
-        }
-      },
-    );
+    // If we're still loading, there can't be an error yet, so we are
+    // guaranteed to have cached data to be displayed.
+    if (update.isFetching) {
+      assert(update.hasData);
+      return [_buildItemsSliver(context, update.data)];
+    }
+
+    assert(!update.isFetching);
+
+    // If everything went successful, display the newly fetched data.
+    if (!update.hasError) {
+      assert(update.hasData);
+      return [_buildItemsSliver(context, update.data)];
+    }
+
+    assert(update.hasError);
+
+    // If we have cached data, display the error as a banner above
+    // the actual items. Otherwise, display a fullscreen error.
+    if (update.hasData) {
+      return [
+        SliverList(
+          delegate: SliverChildListDelegate([
+            widget.errorBannerBuilder(context, update.error),
+          ]),
+        ),
+        _buildItemsSliver(context, update.data),
+      ];
+    } else {
+      return [
+        SliverFillViewport(
+          delegate: SliverChildListDelegate([
+            widget.errorScreenBuilder(context, update.error),
+          ]),
+        ),
+      ];
+    }
+  }
+
+  Widget _buildItemsSliver(BuildContext context, List<Item> items) {
+    if (items.isEmpty) {
+      return SliverFillRemaining(child: widget.emptyStateBuilder(context));
+    } else {
+      return SliverList(
+        delegate: SliverChildBuilderDelegate((context, i) {
+          return (i >= items.length)
+              ? null
+              : widget.itemBuilder(context, items[i]);
+        }),
+      );
+    }
   }
 }

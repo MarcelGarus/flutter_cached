@@ -8,7 +8,12 @@ void main() => runApp(MyApp());
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: Scaffold(body: MyContent()));
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(title: Text('Random numbers')),
+        body: MyContent(),
+      ),
+    );
   }
 }
 
@@ -18,33 +23,66 @@ class MyContent extends StatefulWidget {
 }
 
 class _MyContentState extends State<MyContent> {
-  final manager = CacheManager<int>(
-    fetcher: () async {
-      await Future.delayed(Duration(seconds: 2));
-      if (Random().nextBool()) {
-        throw UnsupportedError('Oh no! Something terrible happened.');
-      }
-      return [1, 2, 3, 4, 5];
-    },
-    loadFromCache: () async => [1, 2, 3],
-    saveToCache: (data) async {},
-  );
+  List<int> inMemoryCache;
+  CacheManager<int> manager;
+
+  @override
+  void initState() {
+    super.initState();
+
+    var random = Random();
+    manager = CacheManager<int>(
+      // The fetcher just waits and then either crashes or returns a list of
+      // random numbers.
+      fetcher: () async {
+        await Future.delayed(Duration(seconds: 2));
+        if (random.nextBool()) {
+          throw UnsupportedError('Oh no! Something terrible happened.');
+        }
+        return List.generate(random.nextInt(3), (i) => random.nextInt(10));
+      },
+      loadFromCache: () async {
+        if (inMemoryCache == null) {
+          throw StateError('Nothing saved in cache.');
+        }
+        return inMemoryCache;
+      },
+      saveToCache: (data) async => inMemoryCache = data,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return CachedListView<int>(
       manager: manager,
       itemBuilder: (context, number) {
-        return ListTile(title: Text('$number'));
+        return ListTile(title: Text('Number $number.'));
       },
       errorBannerBuilder: (context, error) {
-        return ListTile(
-          leading: Text('!'),
-          title: Text('$error'),
+        return Material(
+          color: Colors.red,
+          elevation: 4,
+          child: Text(
+            'An error occurred while fetching the latest numbers: $error',
+            style: TextStyle(color: Colors.white),
+          ),
         );
       },
       errorScreenBuilder: (context, error) {
-        return Center(child: Text('Oh no!\n$error'));
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline),
+              Text('Oh no!\n$error'),
+            ],
+          ),
+        );
+      },
+      emptyStateBuilder: (context) {
+        return Center(
+          child: Text('No numbers here.'),
+        );
       },
     );
   }
