@@ -36,7 +36,7 @@ class CacheController<Item> {
   final Future<void> Function(List<Item> items) saveToCache;
   final Future<List<Item>> Function() loadFromCache;
 
-  final _updates = StreamController<CacheUpdate<Item>>();
+  final _updates = StreamController<CacheUpdate<Item>>.broadcast();
   Stream<CacheUpdate> get updates => _updates.stream;
   List<Item> cachedData;
 
@@ -104,7 +104,8 @@ class CachedCustomScrollView<Item> extends StatefulWidget {
   final CacheController<Item> controller;
 
   /// A function that receives raw [CacheUpdate]s and returns the slivers to
-  /// build.
+  /// build. Does not get called in cases where the (optionally provided)
+  /// specific builders below can be used.
   final List<Widget> Function(BuildContext context, CacheUpdate<Item> update)
       sliverBuilder;
 
@@ -170,9 +171,6 @@ class CachedListView<Item> extends StatelessWidget {
   /// The corresponding [CacheController] that's used as a data provider.
   final CacheController<Item> controller;
 
-  /// A builder for an [Item] to be displayed in the list.
-  final Widget Function(BuildContext context, Item item) itemBuilder;
-
   /// A builder for an [error] banner to be shown at the top of the list.
   final Widget Function(BuildContext context, dynamic error) errorBannerBuilder;
 
@@ -182,14 +180,38 @@ class CachedListView<Item> extends StatelessWidget {
   /// A builder for what to display when there are no items.
   final WidgetBuilder emptyStateBuilder;
 
+  /// A builder for an [Item] to be displayed in the list.
+  final Widget Function(BuildContext context, Item item) itemBuilder;
+
+  /// A builder for item slivers to be displayed in the list.
+  final List<Widget> Function(BuildContext context, List<Item> items)
+      itemSliversBuilder;
+
   const CachedListView({
     Key key,
     @required this.controller,
-    @required this.itemBuilder,
     @required this.errorBannerBuilder,
     @required this.errorScreenBuilder,
-    @required this.emptyStateBuilder,
-  }) : super(key: key);
+    this.emptyStateBuilder,
+    this.itemBuilder,
+    this.itemSliversBuilder,
+  })  : assert(controller != null),
+        assert(errorBannerBuilder != null),
+        assert(errorScreenBuilder != null),
+        assert(
+            itemBuilder != null || itemSliversBuilder != null,
+            'You need to provide an itemBuilder or an itemSliversBuilder for '
+            'building the items.'),
+        assert(
+            itemBuilder == null || itemSliversBuilder == null,
+            "You can't provide both an itemBuilder and an itemSliversBuilder "
+            "for building the items.\n\nUse an itemBuilder if all items "
+            "should be displayed below each other and be built in a "
+            "deterministic manner that doesn't depend on their index. "
+            "Otherwise, use the itemSliversBuilder to receive the list of all "
+            "items and return a list of all the slivers that should be "
+            "created."),
+        super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -198,19 +220,11 @@ class CachedListView<Item> extends StatelessWidget {
       sliverBuilder: (context, update) {
         assert(update.hasData || update.hasError);
 
-        // If we're still loading, there can't be an error yet, so we are
-        // guaranteed to have cached data to be displayed.
-        if (update.isFetching) {
-          assert(update.hasData);
-          return [_buildItemsSliver(context, update.data)];
-        }
-
-        assert(!update.isFetching);
-
-        // If everything went successful, display the newly fetched data.
+        // If there's no error, we are guaranteed to have data - either we are
+        // still fetching and can display cached data or we are finished.
         if (!update.hasError) {
           assert(update.hasData);
-          return [_buildItemsSliver(context, update.data)];
+          return _buildItemSlivers(context, update.data);
         }
 
         assert(update.hasError);
@@ -224,7 +238,7 @@ class CachedListView<Item> extends StatelessWidget {
                 errorBannerBuilder(context, update.error),
               ]),
             ),
-            _buildItemsSliver(context, update.data),
+            ..._buildItemSlivers(context, update.data),
           ];
         } else {
           return [
@@ -239,15 +253,19 @@ class CachedListView<Item> extends StatelessWidget {
     );
   }
 
-  Widget _buildItemsSliver(BuildContext context, List<Item> items) {
-    if (items.isEmpty) {
-      return SliverFillRemaining(child: emptyStateBuilder(context));
+  List<Widget> _buildItemSlivers(BuildContext context, List<Item> items) {
+    if (items.isEmpty && emptyStateBuilder != null) {
+      return [SliverFillRemaining(child: emptyStateBuilder(context))];
+    } else if (itemBuilder != null) {
+      return [
+        SliverList(
+          delegate: SliverChildBuilderDelegate((context, i) {
+            return (i >= items.length) ? null : itemBuilder(context, items[i]);
+          }),
+        )
+      ];
     } else {
-      return SliverList(
-        delegate: SliverChildBuilderDelegate((context, i) {
-          return (i >= items.length) ? null : itemBuilder(context, items[i]);
-        }),
-      );
+      return itemSliversBuilder(context, items);
     }
   }
 }
