@@ -30,6 +30,8 @@ class CacheUpdate<Item> {
 /// Call [dispose] after you're done using the [CacheController].
 class CacheController<Item> {
   final Future<List<Item>> Function() fetcher;
+  Future<void> _currentFetcher;
+
   final Future<void> Function(List<Item> items) saveToCache;
   final Future<List<Item>> Function() loadFromCache;
 
@@ -49,7 +51,12 @@ class CacheController<Item> {
   void dispose() => _updates.close();
 
   /// Fetches data from the cache and the [fetcher] simultaneously.
-  Future<void> fetch() async {
+  Future<void> fetch() {
+    _currentFetcher ??= _actuallyFetchData();
+    return _currentFetcher;
+  }
+
+  Future<void> _actuallyFetchData() async {
     bool fetchingCompleted = false;
 
     _updates.add(CacheUpdate(isFetching: true, data: cachedData));
@@ -93,5 +100,7 @@ class CacheController<Item> {
         }
       }),
     ]);
+
+    _currentFetcher = null;
   }
 }

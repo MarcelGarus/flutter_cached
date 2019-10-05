@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 import 'controller.dart';
 
@@ -8,11 +9,7 @@ Widget _defaultLoadingScreenBuilder(BuildContext _) {
 
 const _defaultFadeDuration = Duration(milliseconds: 200);
 
-List<Widget> _defaultHeaderSliversBuilder(
-    BuildContext _, bool __, CacheUpdate ___) {
-  return [];
-}
-
+List<Widget> _defaultHeaderSliversBuilder(BuildContext _, CacheUpdate __) => [];
 List<Widget> _defaultHeaderSliversBuilderWithOnlyContext(BuildContext _) => [];
 
 /// Takes a [CacheController] and a [builder] and asks the builder to rebuild
@@ -64,15 +61,14 @@ class CachedRawCustomScrollView<Item> extends StatefulWidget {
   /// A builder for the loading screen.
   final WidgetBuilder loadingScreenBuilder;
 
-  /// A builder for slivers to be displayed below the [RefreshIndicator].
+  /// A builder for slivers to be displayed below the refresh indicator.
   /// [update] is guaranteed to have data or an error or both.
   final List<Widget> Function(BuildContext context, CacheUpdate<Item> update)
       bodySliversBuilder;
 
-  /// A builder for slivers to be displayed above the [RefreshIndicator].
-  /// /// [update] is guaranteed to have data or an error or both.
-  final List<Widget> Function(
-          BuildContext context, bool innerBoxScrolled, CacheUpdate<Item> update)
+  /// A builder for slivers to be displayed above the refresh indicator.
+  /// [update] is guaranteed to have data or an error or both.
+  final List<Widget> Function(BuildContext context, CacheUpdate<Item> update)
       headerSliversBuilder;
 
   /// The duration used to fade between the [loadingScreenBuilder] and the
@@ -100,7 +96,7 @@ class CachedRawCustomScrollView<Item> extends StatefulWidget {
 
 class _CachedRawCustomScrollViewState<Item>
     extends State<CachedRawCustomScrollView<Item>> {
-  final _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
+  final _refreshController = RefreshController();
   CacheController<Item> _controller;
 
   @override
@@ -125,7 +121,7 @@ class _CachedRawCustomScrollViewState<Item>
           crossFadeState: showLoadingScreen
               ? CrossFadeState.showFirst
               : CrossFadeState.showSecond,
-          firstChild: Center(child: CircularProgressIndicator()),
+          firstChild: _buildLoadingScreen(context, update),
           secondChild:
               showLoadingScreen ? Container() : _buildContent(context, update),
         );
@@ -133,34 +129,66 @@ class _CachedRawCustomScrollViewState<Item>
     );
   }
 
+  Widget _buildLoadingScreen(BuildContext context, CacheUpdate<Item> update) {
+    return CustomScrollView(
+      slivers: <Widget>[
+        ..._buildHeaderSlivers(context, update),
+        SliverFillRemaining(child: widget.loadingScreenBuilder(context)),
+      ],
+    );
+  }
+
   Widget _buildContent(BuildContext context, CacheUpdate update) {
-    return NestedScrollView(
-      headerSliverBuilder: (context, innerBoxScrolled) {
-        var slivers =
-            widget.headerSliversBuilder(context, innerBoxScrolled, update);
-        assert(
-            slivers != null,
-            "The headerSliversBuilder should never return null. If you don't "
-            "want to display anything above the refresh indicator, consider "
-            "returning an empty list instead.");
-        return slivers;
+    // It's possible to trigger a refresh without the [RefreshIndicator], for
+    // example by calling [controller.fetch] on a button press. Because the
+    // refresh indicator should also spin in that case, we need to trigger it
+    // manually.
+    if (update.isFetching && !_refreshController.isRefresh) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _refreshController.requestRefresh(),
+      );
+    }
+
+    final refresherContent = SmartRefresher(
+      controller: _refreshController,
+      onRefresh: () async {
+        await _controller.fetch();
+        _refreshController.refreshCompleted();
       },
-      body: RefreshIndicator(
-        key: _refreshIndicatorKey,
-        onRefresh: _controller.fetch,
-        child: CustomScrollView(
-          slivers: () {
-            var slivers = widget.bodySliversBuilder(context, update);
-            assert(
-                slivers != null,
-                "The bodySliversBuilder should never return null. If you don't "
-                "want to display anything below the refresh indicator, "
-                "consider returning an empty list instead.");
-            return slivers;
-          }(),
-        ),
+      child: CustomScrollView(
+        slivers: () {
+          var slivers = widget.bodySliversBuilder(context, update);
+          assert(
+              slivers != null,
+              "The bodySliversBuilder should never return null. If you don't "
+              "want to display anything below the refresh indicator, "
+              "consider returning an empty list instead.");
+          return slivers;
+        }(),
       ),
     );
+
+    final headers = _buildHeaderSlivers(context, update);
+
+    if (headers == null || headers.isEmpty) {
+      return refresherContent;
+    } else {
+      return NestedScrollView(
+        headerSliverBuilder: (context, innerBoxScrolled) => headers,
+        body: refresherContent,
+      );
+    }
+  }
+
+  List<Widget> _buildHeaderSlivers(
+      BuildContext context, CacheUpdate<Item> update) {
+    final slivers = widget.headerSliversBuilder(context, update);
+    assert(
+        slivers != null,
+        "The headerSliversBuilder should never return null. If you don't "
+        "want to display anything above the refresh indicator, consider "
+        "returning an empty list instead.");
+    return slivers;
   }
 }
 
@@ -226,7 +254,7 @@ class CachedCustomScrollView<Item> extends StatelessWidget {
     return CachedRawCustomScrollView(
       controller: controller,
       loadingScreenBuilder: loadingScreenBuilder,
-      headerSliversBuilder: (context, innerBoxScrolled, update) => [
+      headerSliversBuilder: (context, update) => [
         if (headerSliversBuilder != null) ...headerSliversBuilder(context),
         if (update.hasData &&
             update.hasError &&
