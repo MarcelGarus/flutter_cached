@@ -18,8 +18,7 @@ class CacheUpdate<Item> {
   bool get hasError => error != null;
 
   CacheUpdate({@required this.isFetching, this.data, this.error})
-      : assert(isFetching != null),
-        assert(!isFetching || error == null);
+      : assert(isFetching != null);
 }
 
 /// A class that manages fetching data using the provided [fetcher] and saves
@@ -37,7 +36,8 @@ class CacheController<Item> {
 
   final _updates = StreamController<CacheUpdate<Item>>.broadcast();
   Stream<CacheUpdate> get updates => _updates.stream;
-  List<Item> cachedData;
+  List<Item> _lastData;
+  dynamic _lastError;
 
   CacheController({
     @required this.fetcher,
@@ -59,7 +59,11 @@ class CacheController<Item> {
   Future<void> _actuallyFetchData() async {
     bool fetchingCompleted = false;
 
-    _updates.add(CacheUpdate(isFetching: true, data: cachedData));
+    _updates.add(CacheUpdate(
+      isFetching: true,
+      data: _lastData,
+      error: _lastError,
+    ));
 
     // Simultaneously get data from the (probably faster) cache and the
     // original source.
@@ -67,7 +71,7 @@ class CacheController<Item> {
       // Get data from the cache.
       Future.microtask(() async {
         try {
-          cachedData = await loadFromCache();
+          _lastData = await loadFromCache();
           // If the original source was faster than the cache, we don't need
           // to do anything. Otherwise, we push a [CacheUpdate] with the
           // [cachedData] so that it can be displayed to the user while the
@@ -75,7 +79,8 @@ class CacheController<Item> {
           if (!fetchingCompleted) {
             _updates.add(CacheUpdate(
               isFetching: true,
-              data: cachedData,
+              data: _lastData,
+              error: _lastError,
             ));
           }
         } catch (error) {
@@ -88,14 +93,15 @@ class CacheController<Item> {
       Future.microtask(() async {
         try {
           List<Item> data = await fetcher();
+          _lastError = null;
           _updates.add(CacheUpdate(isFetching: false, data: data));
-          //unawaited(saveToCache(data));
           saveToCache(data);
         } catch (error) {
+          _lastError = error;
           _updates.add(CacheUpdate(
             isFetching: false,
+            data: _lastData,
             error: error,
-            data: cachedData,
           ));
         }
       }),

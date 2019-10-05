@@ -3,11 +3,10 @@ import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 import 'controller.dart';
 
-Widget _defaultLoadingScreenBuilder(BuildContext _) {
-  return Center(child: CircularProgressIndicator());
-}
-
 const _defaultFadeDuration = Duration(milliseconds: 200);
+
+Widget _defaultLoadingScreenBuilder(BuildContext _) =>
+    Center(child: CircularProgressIndicator());
 
 List<Widget> _defaultHeaderSliversBuilder(BuildContext _, CacheUpdate __) => [];
 List<Widget> _defaultHeaderSliversBuilderWithOnlyContext(BuildContext _) => [];
@@ -259,43 +258,25 @@ class CachedCustomScrollView<Item> extends StatelessWidget {
         if (update.hasData &&
             update.hasError &&
             showErrorBannerAboveRefreshIndicator)
-          SliverList(
-            delegate: SliverChildListDelegate([
-              errorBannerBuilder(context, update.error),
-            ]),
-          ),
+          SliverToBoxAdapter(child: errorBannerBuilder(context, update.error)),
       ],
       bodySliversBuilder: (context, update) {
         assert(update.hasData || update.hasError);
 
-        // If there's no error, we are guaranteed to have data - either we are
-        // finished or we're still fetching but can display cached data.
-        if (!update.hasError) {
-          assert(update.hasData);
-          return _buildItemSlivers(context, update.data);
-        }
-
-        assert(update.hasError);
-
-        // If we have cached data, display the error as a banner above
-        // the actual items. Otherwise, display a fullscreen error.
         if (update.hasData) {
           return [
-            if (!showErrorBannerAboveRefreshIndicator)
-              SliverList(
-                delegate: SliverChildListDelegate([
-                  errorBannerBuilder(context, update.error),
-                ]),
+            if (update.hasError && !showErrorBannerAboveRefreshIndicator)
+              SliverToBoxAdapter(
+                child: errorBannerBuilder(context, update.error),
               ),
             ..._buildItemSlivers(context, update.data),
           ];
         } else {
           return [
-            SliverFillViewport(
-              delegate: SliverChildListDelegate([
-                errorScreenBuilder(context, update.error),
-              ]),
-            ),
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: errorScreenBuilder(context, update.error),
+            )
           ];
         }
       },
@@ -304,7 +285,12 @@ class CachedCustomScrollView<Item> extends StatelessWidget {
 
   List<Widget> _buildItemSlivers(BuildContext context, List<Item> items) {
     if (items.isEmpty && emptyStateBuilder != null) {
-      return [SliverFillRemaining(child: emptyStateBuilder(context))];
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: emptyStateBuilder(context),
+        )
+      ];
     } else {
       return itemSliversBuilder(context, items);
     }

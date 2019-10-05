@@ -70,14 +70,36 @@ class _MainMenuState extends State<MainMenu> {
             )),
           ),
           ListTile(
-            title: Text('CachedListView with custom slivers demo'),
+            title: Text('Example CustomScrollView'),
             onTap: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) =>
-                  CachedCustomScrollViewDemo(controller: controller),
+              builder: (_) => ExampleDemo(),
             )),
           ),
         ],
       ),
+    );
+  }
+}
+
+class ExampleDemo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      slivers: <Widget>[
+        SliverAppBar(
+          title: Text('Title'),
+          expandedHeight: 200,
+        ),
+        SliverList(
+          delegate: SliverChildListDelegate([
+            Container(color: Colors.red, height: 200),
+          ]),
+        ),
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Container(color: Colors.white),
+        ),
+      ],
     );
   }
 }
