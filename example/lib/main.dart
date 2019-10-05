@@ -81,14 +81,15 @@ class CachedListViewDemo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Random numbers')),
-      body: CachedListView<int>(
+      body:
+          Placeholder(), /*CachedListView<int>(
         controller: controller,
         itemBuilder: (context, number) =>
             ListTile(title: Text('Number $number.')),
         errorBannerBuilder: (context, error) => ErrorBanner(),
         errorScreenBuilder: (context, error) => ErrorScreen(),
         emptyStateBuilder: (context) => EmptyState(),
-      ),
+      ),*/
     );
   }
 }
@@ -101,8 +102,9 @@ class CachedCustomScrollViewDemo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxScrolled) => [
+      /*body: CachedRawCustomScrollView<int>(
+        controller: controller,
+        headerSliversBuilder: (_, __, ___) => [
           SliverAppBar(
             title: Text('Random numbers'),
             floating: true,
@@ -110,31 +112,57 @@ class CachedCustomScrollViewDemo extends StatelessWidget {
             expandedHeight: 200,
           ),
         ],
-        body: CachedListView<int>(
-          controller: controller,
-          errorScreenBuilder: (context, error) => ErrorScreen(),
-          errorBannerBuilder: (context, error) => ErrorBanner(),
-          emptyStateBuilder: (context) => EmptyState(),
-          itemSliversBuilder: (context, items) {
-            return [
-              for (var i = 0; i < items.length; i++)
-                if (i < items.length - 4) ...[
-                  SliverGrid.count(
-                    crossAxisCount: 2,
-                    children: <Widget>[
-                      _buildItem(items[i], Colors.yellow),
-                      _buildItem(items[i++], Colors.orange),
-                    ],
-                  ),
-                  SliverList(
-                    delegate: SliverChildListDelegate([
-                      _buildItem(items[i], Colors.lightBlueAccent),
-                    ]),
-                  ),
-                ],
-            ];
-          },
-        ),
+        bodySliversBuilder: (_, __) => [
+          for (var i = 0; i < 8; i++) ...[
+            SliverGrid.count(
+              crossAxisCount: 2,
+              children: <Widget>[
+                _buildItem(1, Colors.yellow),
+                _buildItem(2, Colors.orange),
+              ],
+            ),
+            SliverList(
+              delegate: SliverChildListDelegate([
+                _buildItem(3, Colors.lightBlueAccent),
+              ]),
+            ),
+          ],
+        ],
+      ),*/
+      body: CachedCustomScrollView<int>(
+        controller: controller,
+        errorScreenBuilder: (context, error) => ErrorScreen(),
+        errorBannerBuilder: (context, error) => ErrorBanner(),
+        emptyStateBuilder: (context) => EmptyState(),
+        headerSliversBuilder: (context) {
+          return [
+            SliverAppBar(
+              title: Text('Random numbers'),
+              floating: true,
+              pinned: false,
+              expandedHeight: 200,
+            ),
+          ];
+        },
+        itemSliversBuilder: (context, items) {
+          return [
+            for (var i = 0; i < items.length; i++)
+              if (i < items.length - 4) ...[
+                SliverGrid.count(
+                  crossAxisCount: 2,
+                  children: <Widget>[
+                    _buildItem(items[i], Colors.yellow),
+                    _buildItem(items[i++], Colors.orange),
+                  ],
+                ),
+                SliverList(
+                  delegate: SliverChildListDelegate([
+                    _buildItem(items[i], Colors.lightBlueAccent),
+                  ]),
+                ),
+              ],
+          ];
+        },
       ),
     );
   }
