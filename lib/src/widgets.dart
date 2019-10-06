@@ -276,7 +276,7 @@ class CachedCustomScrollView<Item> extends StatelessWidget {
             SliverFillRemaining(
               hasScrollBody: false,
               child: errorScreenBuilder(context, update.error),
-            )
+            ),
           ];
         }
       },
