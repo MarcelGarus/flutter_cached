@@ -1,3 +1,9 @@
+## [1.1.3] - 2019-10-06
+
+* We now depend on the [`pull_to_refresh`](https://pub.dev/packages/pull_to_refresh)
+  package so that we can start the refresh indicator programatically.
+* Fix missing meta dependency.
+
 ## [1.1.2] - 2019-10-05
 
 * `CachedListView` now takes either an `itemBuilder` for building the items
