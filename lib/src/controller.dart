@@ -35,7 +35,7 @@ class CacheController<Item> {
   final Future<List<Item>> Function() loadFromCache;
 
   final _updates = StreamController<CacheUpdate<Item>>.broadcast();
-  Stream<CacheUpdate> get updates => _updates.stream;
+  Stream<CacheUpdate<Item>> get updates => _updates.stream;
   List<Item> _lastData;
   dynamic _lastError;
 
