@@ -1,3 +1,7 @@
+## [1.1.4] - 2019-10-11
+
+* Fix type propagation on `CacheController`'s `updates`.
+
 ## [1.1.3] - 2019-10-06
 
 * We now depend on the [`pull_to_refresh`](https://pub.dev/packages/pull_to_refresh)
