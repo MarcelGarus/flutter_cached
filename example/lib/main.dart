@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cached_listview/cached_listview.dart';
 
+import 'cached_raw_builder.dart';
+import 'cached_raw_custom_scroll_view.dart';
 import 'cached_custom_scroll_view.dart';
 import 'cached_list_view.dart';
 
@@ -63,16 +65,26 @@ class _MainMenuState extends State<MainMenu> {
             )),
           ),
           ListTile(
-            title: Text('CachedListView with custom slivers demo'),
+            title: Text('CachedCustomScrollView demo'),
             onTap: () => Navigator.of(context).push(MaterialPageRoute(
               builder: (_) =>
                   CachedCustomScrollViewDemo(controller: controller),
             )),
           ),
           ListTile(
-            title: Text('Example CustomScrollView'),
+            title: Text('CachedRawCustomScrollView demo'),
             onTap: () => Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) => ExampleDemo(),
+              builder: (_) => CachedRawCustomScrollViewDemo(
+                controller: controller,
+              ),
+            )),
+          ),
+          ListTile(
+            title: Text('CachedRawBuilder demo'),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => CachedRawBuilderDemo(
+                controller: controller,
+              ),
             )),
           ),
         ],

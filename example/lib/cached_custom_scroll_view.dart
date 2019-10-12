@@ -11,33 +11,6 @@ class CachedCustomScrollViewDemo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      /*body: CachedRawCustomScrollView<int>(
-        controller: controller,
-        headerSliversBuilder: (_, __, ___) => [
-          SliverAppBar(
-            title: Text('Random numbers'),
-            floating: true,
-            pinned: false,
-            expandedHeight: 200,
-          ),
-        ],
-        bodySliversBuilder: (_, __) => [
-          for (var i = 0; i < 8; i++) ...[
-            SliverGrid.count(
-              crossAxisCount: 2,
-              children: <Widget>[
-                _buildItem(1, Colors.yellow),
-                _buildItem(2, Colors.orange),
-              ],
-            ),
-            SliverList(
-              delegate: SliverChildListDelegate([
-                _buildItem(3, Colors.lightBlueAccent),
-              ]),
-            ),
-          ],
-        ],
-      ),*/
       body: CachedCustomScrollView<int>(
         controller: controller,
         errorScreenBuilder: (context, error) => ErrorScreen(),

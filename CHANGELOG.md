@@ -1,3 +1,8 @@
+## [1.1.5] - 2019-10-11
+
+* Add more examples to the demo. Now all abstraction levels are covered.
+* Fix unbound vertical height issue caused by `AnimatedCrossFade`.
+
 ## [1.1.4] - 2019-10-11
 
 * Fix type propagation on `CacheController`'s `updates`.

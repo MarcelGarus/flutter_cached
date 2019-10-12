@@ -13,7 +13,7 @@ List<Widget> _defaultHeaderSliversBuilderWithOnlyContext(BuildContext _) => [];
 
 /// Takes a [CacheController] and a [builder] and asks the builder to rebuild
 /// every time a new [CacheUpdate] is emitted from the [CacheController].
-class CachedRawBuilder<Item> extends StatelessWidget {
+class CachedRawBuilder<Item> extends StatefulWidget {
   /// The [CacheController] to be used as a data provider.
   final CacheController<Item> controller;
 
@@ -30,18 +30,35 @@ class CachedRawBuilder<Item> extends StatelessWidget {
         super(key: key);
 
   @override
+  _CachedRawBuilderState<Item> createState() => _CachedRawBuilderState<Item>();
+}
+
+class _CachedRawBuilderState<Item> extends State<CachedRawBuilder<Item>> {
+  CacheController<Item> _controller;
+
+  @override
+  void didChangeDependencies() {
+    // When this widget is shown for the first time or the manager changed,
+    // trigger the [widget.controller]'s fetch function so we get some data.
+    if (widget.controller != _controller) {
+      _controller = widget.controller..fetch();
+    }
+    super.didChangeDependencies();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return StreamBuilder<CacheUpdate<Item>>(
-      stream: controller.updates,
+      stream: widget.controller.updates,
       initialData: CacheUpdate(isFetching: false),
       builder: (context, snapshot) {
         assert(snapshot.hasData);
         final update = snapshot.data;
 
-        final widget = builder(context, update);
-        assert(widget != null, 'The builder should never return null.');
+        final content = widget.builder(context, update);
+        assert(content != null, 'The builder should never return null.');
 
-        return widget;
+        return content;
       },
     );
   }
@@ -96,17 +113,6 @@ class CachedRawCustomScrollView<Item> extends StatefulWidget {
 class _CachedRawCustomScrollViewState<Item>
     extends State<CachedRawCustomScrollView<Item>> {
   final _refreshController = RefreshController();
-  CacheController<Item> _controller;
-
-  @override
-  void didChangeDependencies() {
-    // When this widget is shown for the first time or the manager changed,
-    // trigger the [widget.controller]'s fetch function so we get some data.
-    if (widget.controller != _controller) {
-      _controller = widget.controller..fetch();
-    }
-    super.didChangeDependencies();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -123,6 +129,16 @@ class _CachedRawCustomScrollViewState<Item>
           firstChild: _buildLoadingScreen(context, update),
           secondChild:
               showLoadingScreen ? Container() : _buildContent(context, update),
+          layoutBuilder: (Widget topChild, Key topChildKey, Widget bottomChild,
+              Key bottomChildKey) {
+            return Stack(
+              overflow: Overflow.visible,
+              children: <Widget>[
+                Positioned.fill(key: bottomChildKey, child: bottomChild),
+                Positioned.fill(key: topChildKey, child: topChild),
+              ],
+            );
+          },
         );
       },
     );
@@ -137,7 +153,7 @@ class _CachedRawCustomScrollViewState<Item>
     );
   }
 
-  Widget _buildContent(BuildContext context, CacheUpdate update) {
+  Widget _buildContent(BuildContext context, CacheUpdate<Item> update) {
     // It's possible to trigger a refresh without the [RefreshIndicator], for
     // example by calling [controller.fetch] on a button press. Because the
     // refresh indicator should also spin in that case, we need to trigger it
@@ -151,7 +167,7 @@ class _CachedRawCustomScrollViewState<Item>
     final refresherContent = SmartRefresher(
       controller: _refreshController,
       onRefresh: () async {
-        await _controller.fetch();
+        await widget.controller.fetch();
         _refreshController.refreshCompleted();
       },
       child: CustomScrollView(
