@@ -1,3 +1,14 @@
+## [2.0.1] - 2019-10-12
+
+* Update examples.
+* Complete transition to `flutter_cached`.
+* Remove `list_diff` dependency.
+
+## [2.0.0] - 2019-10-12
+
+* Complete overhaul of the API.
+* Package moved to `flutter_cached`.
+
 ## [1.1.5] - 2019-10-11
 
 * Add more examples to the demo. Now all abstraction levels are covered.

@@ -6,7 +6,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cached_listview:
+  flutter_cached:
     path: ..
 
 dev_dependencies:

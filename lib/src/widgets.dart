@@ -8,18 +8,16 @@ const _defaultFadeDuration = Duration(milliseconds: 200);
 Widget _defaultLoadingScreenBuilder(BuildContext _) =>
     Center(child: CircularProgressIndicator());
 
-List<Widget> _defaultHeaderSliversBuilder(BuildContext _, CacheUpdate __) => [];
-List<Widget> _defaultHeaderSliversBuilderWithOnlyContext(BuildContext _) => [];
-
 /// Takes a [CacheController] and a [builder] and asks the builder to rebuild
 /// every time a new [CacheUpdate] is emitted from the [CacheController].
-class CachedRawBuilder<Item> extends StatefulWidget {
+/// Calls [CacheController.fetch] when building for the first time.
+class CachedRawBuilder<T> extends StatefulWidget {
   /// The [CacheController] to be used as a data provider.
-  final CacheController<Item> controller;
+  final CacheController<T> controller;
 
   /// A function that receives raw [CacheUpdate]s and returns a widget to
   /// build. [update] is guaranteed to be non-null.
-  final Widget Function(BuildContext context, CacheUpdate<Item> update) builder;
+  final Widget Function(BuildContext context, CacheUpdate<T> update) builder;
 
   CachedRawBuilder({
     Key key,
@@ -30,11 +28,11 @@ class CachedRawBuilder<Item> extends StatefulWidget {
         super(key: key);
 
   @override
-  _CachedRawBuilderState<Item> createState() => _CachedRawBuilderState<Item>();
+  _CachedRawBuilderState<T> createState() => _CachedRawBuilderState<T>();
 }
 
-class _CachedRawBuilderState<Item> extends State<CachedRawBuilder<Item>> {
-  CacheController<Item> _controller;
+class _CachedRawBuilderState<T> extends State<CachedRawBuilder<T>> {
+  CacheController<T> _controller;
 
   @override
   void didChangeDependencies() {
@@ -48,13 +46,12 @@ class _CachedRawBuilderState<Item> extends State<CachedRawBuilder<Item>> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<CacheUpdate<Item>>(
+    return StreamBuilder<CacheUpdate<T>>(
       stream: widget.controller.updates,
       initialData: CacheUpdate(isFetching: false),
-      builder: (context, snapshot) {
+      builder: (BuildContext context, AsyncSnapshot<CacheUpdate<T>> snapshot) {
         assert(snapshot.hasData);
         final update = snapshot.data;
-
         final content = widget.builder(context, update);
         assert(content != null, 'The builder should never return null.');
 
@@ -64,54 +61,57 @@ class _CachedRawBuilderState<Item> extends State<CachedRawBuilder<Item>> {
   }
 }
 
-/// Displays a list with pull-to-refresh feature. Fires the [CacheController]'s
+/// Displays content with pull-to-refresh feature. Fires the
+/// [CacheController]'s
 /// fetch function when building for the first time and when the user pulls to
 /// refresh. Displays [headerSliversBuilder]'s slivers above the refresh
 /// indicator and [bodySliversBuilder] below it. Calls to these builders are
 /// guaranteed provide updates with data or an error or both. Otherwise, the
 /// [loadingScreenBuilder] is called instead.
-class CachedRawCustomScrollView<Item> extends StatefulWidget {
+class CachedBuilder<T> extends StatefulWidget {
   /// The [CacheController] to be used as a data provider.
-  final CacheController<Item> controller;
+  final CacheController<T> controller;
 
   /// A builder for the loading screen.
   final WidgetBuilder loadingScreenBuilder;
 
-  /// A builder for slivers to be displayed below the refresh indicator.
-  /// [update] is guaranteed to have data or an error or both.
-  final List<Widget> Function(BuildContext context, CacheUpdate<Item> update)
-      bodySliversBuilder;
+  /// A builder for an error banner to be shown at the top of the list.
+  final Widget Function(BuildContext context, dynamic error) errorBannerBuilder;
 
-  /// A builder for slivers to be displayed above the refresh indicator.
-  /// [update] is guaranteed to have data or an error or both.
-  final List<Widget> Function(BuildContext context, CacheUpdate<Item> update)
-      headerSliversBuilder;
+  /// A builder for a full screen error message instead of the list.
+  final Widget Function(BuildContext context, dynamic error) errorScreenBuilder;
+
+  /// A builder for the widget to be displayed.
+  final Widget Function(BuildContext context, T data) builder;
+  final bool hasScrollBody;
 
   /// The duration used to fade between the [loadingScreenBuilder] and the
   /// [builder].
   final Duration duration;
 
-  const CachedRawCustomScrollView({
+  const CachedBuilder({
     Key key,
     @required this.controller,
-    @required this.bodySliversBuilder,
-    this.headerSliversBuilder = _defaultHeaderSliversBuilder,
+    @required this.errorBannerBuilder,
+    @required this.errorScreenBuilder,
+    @required this.builder,
     this.loadingScreenBuilder = _defaultLoadingScreenBuilder,
+    this.hasScrollBody = true,
     this.duration = _defaultFadeDuration,
   })  : assert(controller != null),
+        assert(errorBannerBuilder != null),
+        assert(errorScreenBuilder != null),
+        assert(builder != null),
         assert(loadingScreenBuilder != null),
-        assert(headerSliversBuilder != null),
-        assert(bodySliversBuilder != null),
+        assert(hasScrollBody != null),
         assert(duration != null),
         super(key: key);
 
   @override
-  _CachedRawCustomScrollViewState<Item> createState() =>
-      _CachedRawCustomScrollViewState<Item>();
+  _CachedBuilderState<T> createState() => _CachedBuilderState<T>();
 }
 
-class _CachedRawCustomScrollViewState<Item>
-    extends State<CachedRawCustomScrollView<Item>> {
+class _CachedBuilderState<T> extends State<CachedBuilder<T>> {
   final _refreshController = RefreshController();
 
   @override
@@ -129,13 +129,13 @@ class _CachedRawCustomScrollViewState<Item>
           firstChild: _buildLoadingScreen(context, update),
           secondChild:
               showLoadingScreen ? Container() : _buildContent(context, update),
-          layoutBuilder: (Widget topChild, Key topChildKey, Widget bottomChild,
-              Key bottomChildKey) {
+          layoutBuilder:
+              (Widget top, Key topKey, Widget bottom, Key bottomKey) {
             return Stack(
               overflow: Overflow.visible,
               children: <Widget>[
-                Positioned.fill(key: bottomChildKey, child: bottomChild),
-                Positioned.fill(key: topChildKey, child: topChild),
+                Positioned.fill(key: bottomKey, child: bottom),
+                Positioned.fill(key: topKey, child: top),
               ],
             );
           },
@@ -144,16 +144,15 @@ class _CachedRawCustomScrollViewState<Item>
     );
   }
 
-  Widget _buildLoadingScreen(BuildContext context, CacheUpdate<Item> update) {
+  Widget _buildLoadingScreen(BuildContext context, CacheUpdate<T> update) {
     return CustomScrollView(
       slivers: <Widget>[
-        ..._buildHeaderSlivers(context, update),
         SliverFillRemaining(child: widget.loadingScreenBuilder(context)),
       ],
     );
   }
 
-  Widget _buildContent(BuildContext context, CacheUpdate<Item> update) {
+  Widget _buildContent(BuildContext context, CacheUpdate<T> update) {
     // It's possible to trigger a refresh without the [RefreshIndicator], for
     // example by calling [controller.fetch] on a button press. Because the
     // refresh indicator should also spin in that case, we need to trigger it
@@ -164,219 +163,44 @@ class _CachedRawCustomScrollViewState<Item>
       );
     }
 
-    final refresherContent = SmartRefresher(
-      controller: _refreshController,
-      onRefresh: () async {
-        await widget.controller.fetch();
-        _refreshController.refreshCompleted();
-      },
-      child: CustomScrollView(
-        slivers: () {
-          var slivers = widget.bodySliversBuilder(context, update);
-          assert(
-              slivers != null,
-              "The bodySliversBuilder should never return null. If you don't "
-              "want to display anything below the refresh indicator, "
-              "consider returning an empty list instead.");
-          return slivers;
-        }(),
-      ),
-    );
+    return Column(
+      children: <Widget>[
+        if (update.hasData && update.hasError)
+          widget.errorBannerBuilder(context, update.error),
+        Expanded(
+          child: SmartRefresher(
+            controller: _refreshController,
+            onRefresh: () async {
+              await widget.controller.fetch();
+              _refreshController.refreshCompleted();
+            },
+            child: () {
+              if (!update.hasData) {
+                return CustomScrollView(slivers: <Widget>[
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: widget.errorScreenBuilder(context, update.error),
+                  ),
+                ]);
+              }
 
-    final headers = _buildHeaderSlivers(context, update);
+              if (widget.hasScrollBody) {
+                return widget.builder(context, update.data);
+              } else {
+                return CustomScrollView(slivers: <Widget>[
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: widget.builder(context, update.data),
+                  ),
+                ]);
+              }
 
-    if (headers == null || headers.isEmpty) {
-      return refresherContent;
-    } else {
-      return NestedScrollView(
-        headerSliverBuilder: (context, innerBoxScrolled) => headers,
-        body: refresherContent,
-      );
-    }
-  }
-
-  List<Widget> _buildHeaderSlivers(
-      BuildContext context, CacheUpdate<Item> update) {
-    final slivers = widget.headerSliversBuilder(context, update);
-    assert(
-        slivers != null,
-        "The headerSliversBuilder should never return null. If you don't "
-        "want to display anything above the refresh indicator, consider "
-        "returning an empty list instead.");
-    return slivers;
-  }
-}
-
-/// Abstracts from [CacheUpdate]s by taking builders for various special cases
-/// like displaying a loading screen, error banner, error screen and empty
-/// state, so that the actual [itemSliversBuilder] can be simplified to just
-/// take a list of items.
-class CachedCustomScrollView<Item> extends StatelessWidget {
-  /// The corresponding [CacheController] that's used as a data provider.
-  final CacheController<Item> controller;
-
-  /// A builder for an error banner to be shown at the top of the list.
-  final Widget Function(BuildContext context, dynamic error) errorBannerBuilder;
-
-  /// A builder for a full screen error message instead of the list.
-  final Widget Function(BuildContext context, dynamic error) errorScreenBuilder;
-
-  /// A builder for what to display when there are no items.
-  final WidgetBuilder emptyStateBuilder;
-
-  /// A builder for item slivers to be displayed in the list.
-  final List<Widget> Function(BuildContext context, List<Item> items)
-      itemSliversBuilder;
-
-  /// A builder for slivers to be displayed at the top above the refresh
-  /// indicator.
-  final List<Widget> Function(BuildContext context) headerSliversBuilder;
-
-  /// A builder for the loading screen.
-  final WidgetBuilder loadingScreenBuilder;
-
-  /// Whether to show the error banner above the refresh indicator or below.
-  final bool showErrorBannerAboveRefreshIndicator;
-
-  /// The duration used to fade between the [loadingScreenBuilder] and the
-  /// actual content.
-  final Duration duration;
-
-  const CachedCustomScrollView({
-    Key key,
-    @required this.controller,
-    @required this.errorBannerBuilder,
-    @required this.errorScreenBuilder,
-    @required this.emptyStateBuilder,
-    @required this.itemSliversBuilder,
-    this.headerSliversBuilder = _defaultHeaderSliversBuilderWithOnlyContext,
-    this.loadingScreenBuilder = _defaultLoadingScreenBuilder,
-    this.showErrorBannerAboveRefreshIndicator = true,
-    this.duration = _defaultFadeDuration,
-  })  : assert(controller != null),
-        assert(errorBannerBuilder != null),
-        assert(errorScreenBuilder != null),
-        assert(emptyStateBuilder != null),
-        assert(itemSliversBuilder != null),
-        assert(headerSliversBuilder != null),
-        assert(loadingScreenBuilder != null),
-        assert(showErrorBannerAboveRefreshIndicator != null),
-        assert(duration != null),
-        super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return CachedRawCustomScrollView(
-      controller: controller,
-      loadingScreenBuilder: loadingScreenBuilder,
-      headerSliversBuilder: (context, update) => [
-        if (headerSliversBuilder != null) ...headerSliversBuilder(context),
-        if (update.hasData &&
-            update.hasError &&
-            showErrorBannerAboveRefreshIndicator)
-          SliverToBoxAdapter(child: errorBannerBuilder(context, update.error)),
-      ],
-      bodySliversBuilder: (context, update) {
-        assert(update.hasData || update.hasError);
-
-        if (update.hasData) {
-          return [
-            if (update.hasError && !showErrorBannerAboveRefreshIndicator)
-              SliverToBoxAdapter(
-                child: errorBannerBuilder(context, update.error),
-              ),
-            ..._buildItemSlivers(context, update.data),
-          ];
-        } else {
-          return [
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: errorScreenBuilder(context, update.error),
-            ),
-          ];
-        }
-      },
-    );
-  }
-
-  List<Widget> _buildItemSlivers(BuildContext context, List<Item> items) {
-    if (items.isEmpty && emptyStateBuilder != null) {
-      return [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: emptyStateBuilder(context),
-        )
-      ];
-    } else {
-      return itemSliversBuilder(context, items);
-    }
-  }
-}
-
-/// Abstracts from slivers by taking an [itemBuilder] for deterministically
-/// building a single item independent of other items or the index.
-class CachedListView<Item> extends StatelessWidget {
-  /// The corresponding [CacheController] that's used as a data provider.
-  final CacheController<Item> controller;
-
-  /// A builder for an error banner to be shown at the top of the list.
-  final Widget Function(BuildContext context, dynamic error) errorBannerBuilder;
-
-  /// A builder for a full screen error message instead of the list.
-  final Widget Function(BuildContext context, dynamic error) errorScreenBuilder;
-
-  /// A builder for what to display when there are no items.
-  final WidgetBuilder emptyStateBuilder;
-
-  /// A builder for an item to be displayed in the list.
-  final Widget Function(BuildContext context, Item) itemBuilder;
-
-  /// A builder for the loading screen.
-  final WidgetBuilder loadingScreenBuilder;
-
-  /// Whether to show the error banner above the refresh indicator or below.
-  final bool showErrorBannerAboveRefreshIndicator;
-
-  /// The duration used to fade between the [loadingScreenBuilder] and the
-  /// actual content.
-  final Duration duration;
-
-  const CachedListView({
-    Key key,
-    @required this.controller,
-    @required this.errorBannerBuilder,
-    @required this.errorScreenBuilder,
-    @required this.emptyStateBuilder,
-    @required this.itemBuilder,
-    this.loadingScreenBuilder = _defaultLoadingScreenBuilder,
-    this.showErrorBannerAboveRefreshIndicator = true,
-    this.duration = _defaultFadeDuration,
-  })  : assert(controller != null),
-        assert(errorBannerBuilder != null),
-        assert(errorScreenBuilder != null),
-        assert(emptyStateBuilder != null),
-        assert(itemBuilder != null),
-        assert(loadingScreenBuilder != null),
-        assert(showErrorBannerAboveRefreshIndicator != null),
-        assert(duration != null),
-        super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return CachedCustomScrollView(
-      controller: controller,
-      errorBannerBuilder: errorBannerBuilder,
-      errorScreenBuilder: errorScreenBuilder,
-      emptyStateBuilder: emptyStateBuilder,
-      loadingScreenBuilder: loadingScreenBuilder,
-      showErrorBannerAboveRefreshIndicator:
-          showErrorBannerAboveRefreshIndicator,
-      duration: duration,
-      itemSliversBuilder: (context, items) => [
-        SliverList(
-          delegate: SliverChildBuilderDelegate(
-            (context, i) => itemBuilder(context, items[i]),
-            childCount: items.length,
+              /*assert(
+                      content != null,
+                      "The builder should never return null. If you don't want "
+                      "to display anything, consider returning a Container() "
+                      "instead.");*/
+            }(),
           ),
         ),
       ],

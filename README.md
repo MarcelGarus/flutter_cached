@@ -1,8 +1,8 @@
-When building a screen that displays a cached list of items, there are many special cases to think about.
+When building an app that caches data, there are many special cases to think about.
 
-For example, on [material.io](https://material.io) there are guidelines on [how to handle displaying offline data](https://material.io/design/communication/offline-states.html), how pull-to-refresh should be implemented and when to use [error banners](https://material.io/design/communication/confirmation-acknowledgement.html) or [empty states](https://material.io/design/communication/empty-states.html).
+For example, according to the [Material Design guidelines](https://material.io), you need to worry about displaying [offline data](https://material.io/design/communication/offline-states.html), handling [swipe to refresh](https://material.io/design/platform-guidance/android-swipe-to-refresh.html), showing [error banners](https://material.io/design/communication/confirmation-acknowledgement.html) and displaying [empty states](https://material.io/design/communication/empty-states.html).
 
-This package tries to make implementing cached ListViews as easy as possible.
+This package tries to make implementing cached Flutter apps as easy as possible.
 
 | loading with no data in cache | loading with data in cache              | loading successful          |
 | ----------------------------- | --------------------------------------- | --------------------------- |
@@ -17,32 +17,35 @@ This package tries to make implementing cached ListViews as easy as possible.
 First, create a `CacheController`. This will be the class that orchestrates the fetching of data.
 
 ```dart
-var cacheController = CacheController<Item>(
-  // Does the actual work and returns a Future<List<Item>>.
+var controller = CacheController<Item>(
+  // Does the actual work and returns a Future<Item>.
   fetcher: _downloadData,
-  // Asynchronously saves a List<Item> to the cache.
+  // Asynchronously saves an Item to the cache.
   saveToCache: _saveToCache,
-  // Asynchronously loads a List<Item> from the cache.
+  // Asynchronously loads a Item from the cache.
   loadFromCache: _loadFromCache,
 );
+
+// When you're done, call [controller.dispose].
 ```
 
-Then you can create a `CachedListView` in your widget tree:
+Then, you can use a `CachedBuilder` and provide builders for all the special cases:
 
 ```dart
-CachedListView(
-  controller: cacheController,
-  itemBuilder: (context, item) => ...,
+CachedBuilder(
+  controller: controller,
   errorBannerBuilder: (context, error) => ...,
   errorScreenBuilder: (context, error) => ...,
-  emptyStateBuilder: (context) => ...,
+  builder: (context, item) => ...,
 ),
 ```
 
-`CachedRawBuilder`
+And that's it!
 
-`CachedRawCustomScrollView`
+> **Note**: By default, the `CachedBuilder` assumes that the `builder` returns a scrollable widget, like a `ListView` or `GridView`. If that's not the case, you need to set `hasScrollBody` to `false` in order for the swipe to refresh to work.
 
-`CachedCustomScrollView`
+## How does it work?
 
-`CachedListView`
+The `CacheController` offers an `updates` stream of `CacheUpdate`s which is filled with updates once `controller.fetch()` is called.
+
+If you want to react to every update manually, you can use `CachedRawBuilder`, which takes a builder with `context` and an `update`.

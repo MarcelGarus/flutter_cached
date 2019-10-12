@@ -1,4 +1,4 @@
-import 'package:cached_listview/cached_listview.dart';
+import 'package:flutter_cached/flutter_cached.dart';
 import 'package:flutter/material.dart';
 
 class ErrorBanner extends StatelessWidget {
