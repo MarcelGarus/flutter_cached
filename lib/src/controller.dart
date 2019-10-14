@@ -36,8 +36,12 @@ class CacheController<T> {
 
   final _updates = StreamController<CacheUpdate<T>>.broadcast();
   Stream<CacheUpdate<T>> get updates => _updates.stream;
+
   T _lastData;
+  T get lastData => _lastData;
+
   dynamic _lastError;
+  dynamic get lastError => _lastError;
 
   CacheController({
     @required this.fetcher,

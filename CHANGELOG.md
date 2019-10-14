@@ -1,3 +1,7 @@
+## [2.0.2] - 2019-10-14
+
+* Provide `lastData` and `lastError` getters on `CacheController`.
+
 ## [2.0.1] - 2019-10-12
 
 * Update examples.
