@@ -25,8 +25,6 @@ var controller = CacheController<Item>(
   // Asynchronously loads a Item from the cache.
   loadFromCache: _loadFromCache,
 );
-
-// When you're done, call [controller.dispose].
 ```
 
 Then, you can use a `CachedBuilder` and provide builders for all the special cases:
@@ -34,8 +32,8 @@ Then, you can use a `CachedBuilder` and provide builders for all the special cas
 ```dart
 CachedBuilder(
   controller: controller,
-  errorBannerBuilder: (context, error) => ...,
-  errorScreenBuilder: (context, error) => ...,
+  errorBannerBuilder: (context, error, stackTrace) => ...,
+  errorScreenBuilder: (context, error, stackTrace) => ...,
   builder: (context, item) => ...,
 ),
 ```
@@ -43,6 +41,21 @@ CachedBuilder(
 And that's it!
 
 > **Note**: By default, the `CachedBuilder` assumes that the `builder` returns a scrollable widget, like a `ListView` or `GridView`. If that's not the case, you need to set `hasScrollBody` to `false` in order for the swipe to refresh to work.
+
+If you want to create a `CacheController` on the fly, you can also provide a `controllerBuilder`. Then, you'll also won't have to worry about disposing it.
+
+```dart
+CachedBuilder(
+  controllerBuilder: () => CacheController(
+    saveToCache: ...,
+    loadFromCache: ...,
+    fetcher: ...,
+  ),
+  errorBannerBuilder: (context, error, stackTrace) => ...,
+  errorScreenBuilder: (context, error, stackTrace) => ...,
+  builder: (context, item) => ...,
+),
+```
 
 ## How does it work?
 

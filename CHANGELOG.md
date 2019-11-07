@@ -1,3 +1,21 @@
+## [3.0.0] - 2019-11-02
+
+* When calling `loadFromCache`, the `CacheController` only catches
+  `NotInCacheException`s, not all possible errors. That makes it simpler to
+  debug, because you need to explicitly throw this error if the cache is empty.
+  Other errors will still bubble up to the debugger.
+* The `CacheUpdate` now also contains a `stackTrace` if it contains an `error`.
+  That makes debugging even easier.
+
+## [2.1.1] - 2019-11-02
+
+* You don't need to call `dispose` anymore. If you want to listen to multiple
+  update streams of the same controller, just request `updates` multiple times.
+
+## [2.1.0] - 2019-11-02
+
+* Optionally provide a `controllerBuilder` instead of a `controller` to the `CachedRawBuilder` or the `CachedBuilder`. `dispose` is called automatically.
+
 ## [2.0.2] - 2019-10-14
 
 * Provide `lastData` and `lastError` getters on `CacheController`.

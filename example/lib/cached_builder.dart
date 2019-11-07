@@ -12,7 +12,7 @@ class CachedBuilderDemo extends StatelessWidget {
       appBar: AppBar(title: Text('Numbers')),
       body: CachedBuilder<List<int>>(
         controller: controller,
-        errorBannerBuilder: (context, error) {
+        errorBannerBuilder: (context, error, _) {
           return Material(
             elevation: 2,
             child: Container(
@@ -21,7 +21,7 @@ class CachedBuilderDemo extends StatelessWidget {
             ),
           );
         },
-        errorScreenBuilder: (context, error) {
+        errorScreenBuilder: (context, error, _) {
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,

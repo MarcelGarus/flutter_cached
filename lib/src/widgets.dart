@@ -8,24 +8,47 @@ const _defaultFadeDuration = Duration(milliseconds: 200);
 Widget _defaultLoadingScreenBuilder(BuildContext _) =>
     Center(child: CircularProgressIndicator());
 
+typedef ErrorBuilder = Widget Function(
+    BuildContext context, dynamic error, StackTrace stackTrace);
+
 /// Takes a [CacheController] and a [builder] and asks the builder to rebuild
 /// every time a new [CacheUpdate] is emitted from the [CacheController].
 /// Calls [CacheController.fetch] when building for the first time.
 class CachedRawBuilder<T> extends StatefulWidget {
-  /// The [CacheController] to be used as a data provider.
-  final CacheController<T> controller;
+  final CacheController<T> Function() controllerBuilder;
 
   /// A function that receives raw [CacheUpdate]s and returns a widget to
   /// build. [update] is guaranteed to be non-null.
   final Widget Function(BuildContext context, CacheUpdate<T> update) builder;
 
-  CachedRawBuilder({
+  factory CachedRawBuilder({
     Key key,
-    @required this.controller,
+    CacheController<T> controller,
+    CacheController<T> Function() controllerBuilder,
+    Widget Function(BuildContext context, CacheUpdate<T> update) builder,
+  }) {
+    assert(builder != null);
+    assert(
+        controller != null || controllerBuilder != null,
+        'You should provide a controller or a controller builder to the '
+        'CachedRawBuilder.');
+    assert(
+        controller == null || controllerBuilder == null,
+        "You can't provide both a controller and a controller builder to the "
+        "CachedRawBuilder.");
+    final actualControllerBuilder = controllerBuilder ?? () => controller;
+    return CachedRawBuilder._(
+      key: key,
+      controllerBuilder: actualControllerBuilder,
+      builder: builder,
+    );
+  }
+
+  CachedRawBuilder._({
+    Key key,
+    @required this.controllerBuilder,
     @required this.builder,
-  })  : assert(controller != null),
-        assert(builder != null),
-        super(key: key);
+  }) : super(key: key);
 
   @override
   _CachedRawBuilderState<T> createState() => _CachedRawBuilderState<T>();
@@ -35,19 +58,15 @@ class _CachedRawBuilderState<T> extends State<CachedRawBuilder<T>> {
   CacheController<T> _controller;
 
   @override
-  void didChangeDependencies() {
-    // When this widget is shown for the first time or the manager changed,
-    // trigger the [widget.controller]'s fetch function so we get some data.
-    if (widget.controller != _controller) {
-      _controller = widget.controller..fetch();
-    }
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
+    _controller = widget.controllerBuilder()..fetch();
   }
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<CacheUpdate<T>>(
-      stream: widget.controller.updates,
+      stream: _controller.updates,
       initialData: CacheUpdate(isFetching: false),
       builder: (BuildContext context, AsyncSnapshot<CacheUpdate<T>> snapshot) {
         assert(snapshot.hasData);
@@ -72,14 +91,18 @@ class CachedBuilder<T> extends StatefulWidget {
   /// The [CacheController] to be used as a data provider.
   final CacheController<T> controller;
 
+  /// A builder for building the [CacheController] to be used as a data
+  /// provider.
+  final CacheController<T> Function() controllerBuilder;
+
   /// A builder for the loading screen.
   final WidgetBuilder loadingScreenBuilder;
 
   /// A builder for an error banner to be shown at the top of the list.
-  final Widget Function(BuildContext context, dynamic error) errorBannerBuilder;
+  final ErrorBuilder errorBannerBuilder;
 
   /// A builder for a full screen error message instead of the list.
-  final Widget Function(BuildContext context, dynamic error) errorScreenBuilder;
+  final ErrorBuilder errorScreenBuilder;
 
   /// A builder for the widget to be displayed.
   final Widget Function(BuildContext context, T data) builder;
@@ -91,7 +114,8 @@ class CachedBuilder<T> extends StatefulWidget {
 
   const CachedBuilder({
     Key key,
-    @required this.controller,
+    this.controller,
+    this.controllerBuilder,
     @required this.errorBannerBuilder,
     @required this.errorScreenBuilder,
     @required this.builder,
@@ -118,6 +142,7 @@ class _CachedBuilderState<T> extends State<CachedBuilder<T>> {
   Widget build(BuildContext context) {
     return CachedRawBuilder(
       controller: widget.controller,
+      controllerBuilder: widget.controllerBuilder,
       builder: (context, update) {
         final showLoadingScreen = !update.hasData && !update.hasError;
 
@@ -166,7 +191,7 @@ class _CachedBuilderState<T> extends State<CachedBuilder<T>> {
     return Column(
       children: <Widget>[
         if (update.hasData && update.hasError)
-          widget.errorBannerBuilder(context, update.error),
+          widget.errorBannerBuilder(context, update.error, update.stackTrace),
         Expanded(
           child: SmartRefresher(
             controller: _refreshController,
@@ -179,7 +204,8 @@ class _CachedBuilderState<T> extends State<CachedBuilder<T>> {
                 return CustomScrollView(slivers: <Widget>[
                   SliverFillRemaining(
                     hasScrollBody: false,
-                    child: widget.errorScreenBuilder(context, update.error),
+                    child: widget.errorScreenBuilder(
+                        context, update.error, update.stackTrace),
                   ),
                 ]);
               }
@@ -194,12 +220,6 @@ class _CachedBuilderState<T> extends State<CachedBuilder<T>> {
                   ),
                 ]);
               }
-
-              /*assert(
-                      content != null,
-                      "The builder should never return null. If you don't want "
-                      "to display anything, consider returning a Container() "
-                      "instead.");*/
             }(),
           ),
         ),
