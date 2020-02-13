@@ -1,3 +1,7 @@
+## [4.1.0] - 2020-01-24
+
+* There are now several utility controllers: You can create a controller from a stream of controllers, a list of controllers as well as a list of `CacheUpdate`s.
+
 ## [4.0.0] - 2020-01-24
 
 * Refactored `CacheController`: There are now two concrete `CacheController` implementations: The `SimpleCacheController` and the `PaginatedCacheController`.
