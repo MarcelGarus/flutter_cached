@@ -6,23 +6,24 @@ import 'package:meta/meta.dart';
 /// its state of fetching data.
 @immutable
 class CacheUpdate<T> {
-  CacheUpdate._({
+  CacheUpdate.raw({
     @required this.isFetching,
     this.data,
     this.error,
     this.stackTrace,
   }) : assert(isFetching != null);
 
-  CacheUpdate.inital() : this._(isFetching: false);
+  CacheUpdate.inital() : this.raw(isFetching: false);
 
-  CacheUpdate.loading() : this._(isFetching: true);
+  CacheUpdate.loading() : this.raw(isFetching: true);
 
-  CacheUpdate.cached(T cachedData) : this._(isFetching: true, data: cachedData);
+  CacheUpdate.cached(T cachedData)
+      : this.raw(isFetching: true, data: cachedData);
 
-  CacheUpdate.success(T data) : this._(isFetching: false, data: data);
+  CacheUpdate.success(T data) : this.raw(isFetching: false, data: data);
 
   CacheUpdate.error(dynamic error, StackTrace stackTrace, {T cachedData})
-      : this._(
+      : this.raw(
           isFetching: false,
           data: cachedData,
           error: error,

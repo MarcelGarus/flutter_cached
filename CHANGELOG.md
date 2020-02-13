@@ -1,3 +1,7 @@
+## [4.1.1] - 2020-02-13
+
+* Make `CacheUpdate`'s (default) constructor public under the name `.raw(…)`.
+
 ## [4.1.0] - 2020-02-13
 
 * There are now several utility controllers: You can create a controller from a stream of controllers, a list of controllers as well as a list of `CacheUpdate`s.
