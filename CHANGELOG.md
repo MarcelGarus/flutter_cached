@@ -1,3 +1,23 @@
+## [4.0.0] - 2020-01-24
+
+* Refactored `CacheController`: There are now two concrete `CacheController` implementations: The `SimpleCacheController` and the `PaginatedCacheController`.
+* The `CacheUpdate` got several fancy constructors (`initial`, `loading`, `cached`, `success`, `error`) and getters (`isNotFetching`, `hasNoData`, `hasNoError`).
+* The readme got revised quite a bit.
+
+## [3.2.0] - 2020-01-24
+
+* Create `CacheController` interface and rename former `CacheController` to `CacheControllerImpl`.
+* Create `PaginatedListView`.
+
+## [3.1.0] - 2020-01-24
+
+* Add `PaginatedCacheController`.
+
+## [3.0.1] - 2019-11-09
+
+* Fix `CacheController`, where the data would be saved to the cache but not
+  being sent directly to the updates streams.
+
 ## [3.0.0] - 2019-11-02
 
 * When calling `loadFromCache`, the `CacheController` only catches
@@ -14,7 +34,8 @@
 
 ## [2.1.0] - 2019-11-02
 
-* Optionally provide a `controllerBuilder` instead of a `controller` to the `CachedRawBuilder` or the `CachedBuilder`. `dispose` is called automatically.
+* Optionally provide a `controllerBuilder` instead of a `controller` to the
+  `CachedRawBuilder` or the `CachedBuilder`. `dispose` is called automatically.
 
 ## [2.0.2] - 2019-10-14
 

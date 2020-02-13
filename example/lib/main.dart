@@ -22,7 +22,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
 
     var random = Random();
-    controller = CacheController<List<int>>(
+    controller = SimpleCacheController<List<int>>(
       // The fetcher just waits and then either crashes or returns a list of
       // random numbers.
       fetcher: () async {
@@ -35,13 +35,8 @@ class _MyAppState extends State<MyApp> {
         }
         throw UnsupportedError('Oh no! Something terrible happened.');
       },
-      loadFromCache: () async {
-        if (inMemoryCache == null) {
-          throw StateError('Nothing saved in cache.');
-        }
-        return inMemoryCache;
-      },
-      saveToCache: (data) async => inMemoryCache = data,
+      loadFromCache: () async => throw NotInCacheException(),
+      saveToCache: (_) async {},
     );
   }
 

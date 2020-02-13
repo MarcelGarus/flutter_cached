@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 import 'controller.dart';
+import 'update.dart';
 
 const _defaultFadeDuration = Duration(milliseconds: 200);
 
@@ -13,67 +14,32 @@ typedef ErrorBuilder = Widget Function(
 
 /// Takes a [CacheController] and a [builder] and asks the builder to rebuild
 /// every time a new [CacheUpdate] is emitted from the [CacheController].
-/// Calls [CacheController.fetch] when building for the first time.
-class CachedRawBuilder<T> extends StatefulWidget {
-  final CacheController<T> Function() controllerBuilder;
+class CachedRawBuilder<T> extends StatelessWidget {
+  CachedRawBuilder({
+    Key key,
+    @required this.controller,
+    @required this.builder,
+  })  : assert(controller != null),
+        assert(builder != null),
+        super(key: key);
+
+  final CacheController<T> controller;
 
   /// A function that receives raw [CacheUpdate]s and returns a widget to
   /// build. [update] is guaranteed to be non-null.
   final Widget Function(BuildContext context, CacheUpdate<T> update) builder;
 
-  factory CachedRawBuilder({
-    Key key,
-    CacheController<T> controller,
-    CacheController<T> Function() controllerBuilder,
-    Widget Function(BuildContext context, CacheUpdate<T> update) builder,
-  }) {
-    assert(builder != null);
-    assert(
-        controller != null || controllerBuilder != null,
-        'You should provide a controller or a controller builder to the '
-        'CachedRawBuilder.');
-    assert(
-        controller == null || controllerBuilder == null,
-        "You can't provide both a controller and a controller builder to the "
-        "CachedRawBuilder.");
-    final actualControllerBuilder = controllerBuilder ?? () => controller;
-    return CachedRawBuilder._(
-      key: key,
-      controllerBuilder: actualControllerBuilder,
-      builder: builder,
-    );
-  }
-
-  CachedRawBuilder._({
-    Key key,
-    @required this.controllerBuilder,
-    @required this.builder,
-  }) : super(key: key);
-
-  @override
-  _CachedRawBuilderState<T> createState() => _CachedRawBuilderState<T>();
-}
-
-class _CachedRawBuilderState<T> extends State<CachedRawBuilder<T>> {
-  CacheController<T> _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = widget.controllerBuilder()..fetch();
-  }
-
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<CacheUpdate<T>>(
-      stream: _controller.updates,
-      initialData: CacheUpdate(isFetching: false),
-      builder: (BuildContext context, AsyncSnapshot<CacheUpdate<T>> snapshot) {
+      stream: controller.updates,
+      initialData: CacheUpdate.inital(),
+      builder: (context, snapshot) {
         assert(snapshot.hasData);
         final update = snapshot.data;
-        final content = widget.builder(context, update);
-        assert(content != null, 'The builder should never return null.');
 
+        final content = builder(context, update);
+        assert(content != null, 'The builder should never return null.');
         return content;
       },
     );
@@ -81,19 +47,14 @@ class _CachedRawBuilderState<T> extends State<CachedRawBuilder<T>> {
 }
 
 /// Displays content with pull-to-refresh feature. Fires the
-/// [CacheController]'s
-/// fetch function when building for the first time and when the user pulls to
-/// refresh. Displays [headerSliversBuilder]'s slivers above the refresh
-/// indicator and [bodySliversBuilder] below it. Calls to these builders are
-/// guaranteed provide updates with data or an error or both. Otherwise, the
-/// [loadingScreenBuilder] is called instead.
+/// [CacheController]'s fetch function when building for the first time and
+/// when the user pulls to refresh. Displays [headerSliversBuilder]'s slivers
+/// above the refresh indicator and [bodySliversBuilder] below it. Calls to
+/// these builders are guaranteed to provide updates with data or an error or
+/// both. Otherwise, the [loadingScreenBuilder] is called instead.
 class CachedBuilder<T> extends StatefulWidget {
   /// The [CacheController] to be used as a data provider.
   final CacheController<T> controller;
-
-  /// A builder for building the [CacheController] to be used as a data
-  /// provider.
-  final CacheController<T> Function() controllerBuilder;
 
   /// A builder for the loading screen.
   final WidgetBuilder loadingScreenBuilder;
@@ -115,7 +76,6 @@ class CachedBuilder<T> extends StatefulWidget {
   const CachedBuilder({
     Key key,
     this.controller,
-    this.controllerBuilder,
     @required this.errorBannerBuilder,
     @required this.errorScreenBuilder,
     @required this.builder,
@@ -142,7 +102,6 @@ class _CachedBuilderState<T> extends State<CachedBuilder<T>> {
   Widget build(BuildContext context) {
     return CachedRawBuilder(
       controller: widget.controller,
-      controllerBuilder: widget.controllerBuilder,
       builder: (context, update) {
         final showLoadingScreen = !update.hasData && !update.hasError;
 
@@ -224,6 +183,83 @@ class _CachedBuilderState<T> extends State<CachedBuilder<T>> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// A widget that when shown, calls [controller.fetchMore].
+class LoadMoreWidget extends StatefulWidget {
+  const LoadMoreWidget({
+    Key key,
+    @required this.controller,
+    @required this.child,
+  })  : assert(controller != null),
+        super(key: key);
+
+  final PaginatedCacheController controller;
+  final Widget child;
+
+  @override
+  _LoadMoreWidgetState createState() => _LoadMoreWidgetState();
+}
+
+class _LoadMoreWidgetState extends State<LoadMoreWidget> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.fetchMore();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+Widget _buildDefaultLoadMoreContent(BuildContext context) {
+  return Center(child: CircularProgressIndicator());
+}
+
+class PaginatedListView<T, State extends PaginationState>
+    extends StatelessWidget {
+  const PaginatedListView({
+    Key key,
+    @required this.controller,
+    @required this.errorBannerBuilder,
+    @required this.errorScreenBuilder,
+    @required this.loadingScreenBuilder,
+    @required this.itemBuilder,
+    this.loadMoreBuilder = _buildDefaultLoadMoreContent,
+  }) : super(key: key);
+
+  final PaginatedCacheController<T, State> controller;
+  final ErrorBuilder errorBannerBuilder;
+  final ErrorBuilder errorScreenBuilder;
+  final WidgetBuilder loadingScreenBuilder;
+  final Widget Function(BuildContext context, T data) itemBuilder;
+  final WidgetBuilder loadMoreBuilder;
+
+  @override
+  Widget build(BuildContext context) {
+    return CachedBuilder<List<T>>(
+      controller: controller,
+      errorBannerBuilder: errorBannerBuilder,
+      errorScreenBuilder: errorScreenBuilder,
+      loadingScreenBuilder: loadingScreenBuilder,
+      builder: (context, items) {
+        return ListView.builder(
+          itemBuilder: (context, i) {
+            if (i < items.length) {
+              return itemBuilder(context, items[i]);
+            } else if (i == items.length) {
+              return LoadMoreWidget(
+                controller: controller,
+                child: loadMoreBuilder(context),
+              );
+            } else {
+              return null;
+            }
+          },
+        );
+      },
     );
   }
 }
