@@ -1,3 +1,7 @@
+## [4.2.1] - 2020-02-23
+
+* Add `map` method to `CacheController`.
+
 ## [4.1.1] - 2020-02-13
 
 * Make `CacheUpdate`'s (default) constructor public under the name `.raw(…)`.

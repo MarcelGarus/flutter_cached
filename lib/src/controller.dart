@@ -11,23 +11,6 @@ part 'simple.dart';
 abstract class CacheController<T> {
   CacheController();
 
-  factory CacheController.fromStreamOfControllers(
-      Stream<CacheController<T>> stream) {
-    return CacheControllerFromStreamOfControllers(controllerStream: stream);
-  }
-
-  factory CacheController.fromStreamOfUpdates({
-    @required Future<void> Function() fetch,
-    @required Stream<CacheUpdate<T>> stream,
-  }) {
-    return CacheControllerFromStream(fetcher: fetch, stream: stream);
-  }
-
-  static CacheController<List<T>> combiningControllers<T>(
-      List<CacheController<T>> controllers) {
-    return CombiningCacheController(controllers: controllers);
-  }
-
   final _controller = UpdatesController<T>();
 
   CacheUpdate<T> get lastUpdate => _controller.lastUpdate;
@@ -45,6 +28,29 @@ abstract class CacheController<T> {
   /// to receive updates about events in between (like events from the cache),
   /// you should listen to the [updates] stream.
   Future<void> fetch();
+
+  // Specializations for certain kinds of [CacheControllers].
+
+  factory CacheController.fromStreamOfControllers(
+      Stream<CacheController<T>> stream) {
+    return CacheControllerFromStreamOfControllers(controllerStream: stream);
+  }
+
+  factory CacheController.fromStreamOfUpdates({
+    @required Future<void> Function() fetch,
+    @required Stream<CacheUpdate<T>> stream,
+  }) {
+    return CacheControllerFromStream(fetcher: fetch, stream: stream);
+  }
+
+  static CacheController<List<T>> combiningControllers<T>(
+      List<CacheController<T>> controllers) {
+    return CombiningCacheController(controllers: controllers);
+  }
+
+  MappedCacheController<T, S> map<S>(S Function(T value) convert) {
+    return MappedCacheController<T, S>(controller: this, convert: convert);
+  }
 }
 
 /// Create a [CacheController] based on a [Stream] of [CacheController]s.
@@ -128,4 +134,25 @@ class CombiningCacheController<T> extends CacheController<List<T>> {
       for (final controller in controllers) controller.fetch(),
     ]);
   }
+}
+
+/// A [CacheController] that maps [A] to [B].
+class MappedCacheController<A, B> extends CacheController<B> {
+  MappedCacheController({@required this.controller, @required this.convert})
+      : assert(controller != null),
+        assert(convert != null);
+
+  final CacheController<A> controller;
+  final B Function(A value) convert;
+
+  Stream<CacheUpdate<B>> get updates => controller.updates.map((update) {
+        return CacheUpdate.raw(
+          data: update.data == null ? null : convert(update.data),
+          error: update.error,
+          stackTrace: update.stackTrace,
+          isFetching: update.isFetching,
+        );
+      });
+
+  Future<void> fetch() => controller.fetch();
 }
