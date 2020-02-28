@@ -26,7 +26,7 @@ class SimpleCacheController<T> extends CacheController<T> {
   final ToCacheSaver<T> saveToCache;
   final FromCacheLoader<T> loadFromCache;
 
-  Batcher<CacheUpdate<T>> _fetcher;
+  final _fetcher = Batcher<CacheUpdate<T>>();
 
   /// Fetches data from the cache and the [fetcher] simultaneously and returns
   /// the final [CacheUpdate]. If you want to receive updates about events in

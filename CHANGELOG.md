@@ -1,3 +1,7 @@
+## [4.2.2] - 2020-02-28
+
+* Fix error in `SimpleController`.
+
 ## [4.2.1] - 2020-02-23
 
 * Add `map` method to `CacheController`.
