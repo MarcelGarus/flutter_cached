@@ -1,3 +1,11 @@
+## [4.2.4] - 2020-02-28
+
+* `CacheController`'s `fetch` is now automatically called when listening to the `updates` stream.
+
+## [4.2.3] - 2020-02-28
+
+* Fix error in `CachedRawBuilder`.
+
 ## [4.2.2] - 2020-02-28
 
 * Fix error in `SimpleController`.

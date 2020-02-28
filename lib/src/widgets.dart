@@ -33,12 +33,10 @@ class CachedRawBuilder<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<CacheUpdate<T>>(
       stream: controller.updates,
-      initialData: CacheUpdate.inital(),
       builder: (context, snapshot) {
-        assert(snapshot.hasData);
         final update = snapshot.data;
 
-        final content = builder(context, update);
+        final content = builder(context, update ?? CacheUpdate.inital());
         assert(content != null, 'The builder should never return null.');
         return content;
       },

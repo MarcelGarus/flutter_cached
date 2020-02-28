@@ -22,7 +22,10 @@ abstract class CacheController<T> {
   /// A stream of [CacheUpdate]s of this controller. A new update appears
   /// everytime something new happens that's also relevant for the listener
   /// (like, new data is available or an error occurred during fetching).
-  Stream<CacheUpdate<T>> get updates => _controller.updates;
+  Stream<CacheUpdate<T>> get updates {
+    fetch();
+    return _controller.updates;
+  }
 
   /// Fetches data from the cache and the [fetcher] simultaneously. If you want
   /// to receive updates about events in between (like events from the cache),
