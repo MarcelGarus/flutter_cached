@@ -1,3 +1,7 @@
+## [4.2.5] - 2020-03-11
+
+* Fix [#4](https://github.com/marcelgarus/flutter_cached/issues/4).
+
 ## [4.2.4] - 2020-02-28
 
 * `CacheController`'s `fetch` is now automatically called when listening to the `updates` stream.
