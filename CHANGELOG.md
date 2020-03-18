@@ -1,3 +1,7 @@
+## [4.2.7] - 2020-03-12
+
+* Add `StreamedCacheController`.
+
 ## [4.2.6] - 2020-03-12
 
 * Calling `updates` multiple times on a single `CacheController` only calls
