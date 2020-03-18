@@ -7,6 +7,7 @@ import 'update.dart';
 
 part 'paginated.dart';
 part 'simple.dart';
+part 'streamed.dart';
 
 abstract class CacheController<T> {
   CacheController();
@@ -23,7 +24,9 @@ abstract class CacheController<T> {
   /// everytime something new happens that's also relevant for the listener
   /// (like, new data is available or an error occurred during fetching).
   Stream<CacheUpdate<T>> get updates {
-    fetch();
+    if (lastUpdate == null) {
+      fetch();
+    }
     return _controller.updates;
   }
 

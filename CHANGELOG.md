@@ -1,6 +1,11 @@
+## [4.2.6] - 2020-03-12
+
+* Calling `updates` multiple times on a single `CacheController` only calls
+  `fetch` once.
+
 ## [4.2.5] - 2020-03-11
 
-* Fix [#4](https://github.com/marcelgarus/flutter_cached/issues/4).
+* Calling `fetch` on a `CacheController` now always calls the `fetcher`.
 
 ## [4.2.4] - 2020-02-28
 
