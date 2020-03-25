@@ -1,5 +1,4 @@
 library flutter_cached;
 
-export 'src/controller.dart';
-export 'src/update.dart';
+export 'src/fetch_stream.dart';
 export 'src/widgets.dart';
