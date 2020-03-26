@@ -21,8 +21,8 @@ abstract class FetchStream<T> extends Stream<T> {
   void dispose();
 
   _CachedFetchStream<T> cached({
-    @required SaveToCache save,
-    @required LoadFromCache load,
+    @required SaveToCache<T> save,
+    @required LoadFromCache<T> load,
   }) {
     return _CachedFetchStream.withSaverAndLoader(this, save, load);
   }
@@ -152,8 +152,8 @@ class _ConvertedFetchStream<T> implements FetchStream<T> {
           onError: onError, onDone: onDone, cancelOnError: cancelOnError);
 
   _CachedFetchStream<T> cached({
-    @required SaveToCache save,
-    @required LoadFromCache load,
+    @required SaveToCache<T> save,
+    @required LoadFromCache<T> load,
   }) {
     return _CachedFetchStream.withSaverAndLoader(this, save, load);
   }
