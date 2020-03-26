@@ -10,22 +10,22 @@ part 'cached_fetch_stream.dart';
 typedef Fetcher<T> = FutureOr<T> Function();
 
 /// A broadcast [Stream] that takes a [Function] as an argument that gets
-/// executed when it's [listen]ed to the first time and whenever [fetch] gets
-/// called.
+/// executed when whenever [fetch] gets called. The result is broadcasted to
+/// the listeners.
+/// The [fetch] function is never executed multiple times simultaneously.
 abstract class FetchStream<T> extends Stream<T> {
-  FetchStream._();
+  FetchStream.raw();
 
   factory FetchStream(Fetcher<T> fetcher) = _FetchStreamImpl<T>;
 
   Future<void> fetch();
   void dispose();
 
-  _CachedFetchStream<T> cached({
+  CachedFetchStream<T> cached({
     @required SaveToCache<T> save,
     @required LoadFromCache<T> load,
-  }) {
-    return _CachedFetchStream.withSaverAndLoader(this, save, load);
-  }
+  }) =>
+      CachedFetchStream.impl(this, save, load);
 
   @override
   FetchStream<E> asyncExpand<E>(Stream<E> Function(T event) convert) =>
@@ -86,7 +86,7 @@ abstract class FetchStream<T> extends Stream<T> {
 }
 
 class _FetchStreamImpl<T> extends FetchStream<T> {
-  _FetchStreamImpl(this._fetcher) : super._();
+  _FetchStreamImpl(this._fetcher) : super.raw();
 
   final _controller = BehaviorSubject();
   final Fetcher<T> _fetcher;
@@ -112,9 +112,6 @@ class _FetchStreamImpl<T> extends FetchStream<T> {
     void Function() onDone,
     bool cancelOnError,
   }) {
-    if (_controller.value == null) {
-      fetch();
-    }
     return _controller.stream.listen(
       onData,
       onError: onError,
@@ -151,12 +148,9 @@ class _ConvertedFetchStream<T> implements FetchStream<T> {
       _parent.listen(onData,
           onError: onError, onDone: onDone, cancelOnError: cancelOnError);
 
-  _CachedFetchStream<T> cached({
-    @required SaveToCache<T> save,
-    @required LoadFromCache<T> load,
-  }) {
-    return _CachedFetchStream.withSaverAndLoader(this, save, load);
-  }
+  @override
+  CachedFetchStream<T> cached({SaveToCache<T> save, LoadFromCache<T> load}) =>
+      _parent.cached(save: save, load: load);
 
   @override
   Future<bool> any(bool Function(T element) test) => _parent.any(test);
