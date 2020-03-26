@@ -17,56 +17,6 @@ abstract class _CachedFetchStream<T> extends FetchStream<T> {
 
   Future<void> fetch({bool force = false});
   void dispose();
-}
-
-class _CachedFetchStreamImpl<T> extends _CachedFetchStream<T> {
-  _CachedFetchStreamImpl(this._parent, this._saveToCache, this._loadFromCache)
-      : super._() {
-    _parent.listen((value) {
-      _controller.add(value);
-      _saveToCache(value);
-      _loadingFromCache?.cancel();
-      _loadingFromCache = _loadFromCache().listen(_controller.add);
-    }, onError: (error, stackTrace) {
-      _controller.addError(error, stackTrace);
-    }, onDone: _controller.close);
-  }
-
-  final _controller = BehaviorSubject();
-  final FetchStream<T> _parent;
-  final SaveToCache<T> _saveToCache;
-  final LoadFromCache<T> _loadFromCache;
-  StreamSubscription<T> _loadingFromCache;
-
-  void dispose() {
-    _parent.dispose();
-    _loadingFromCache.cancel();
-    _controller.close();
-  }
-
-  Future<void> fetch({bool force = false}) async {
-    if (force || !_controller.hasValue) {
-      await _parent.fetch();
-    }
-  }
-
-  @override
-  StreamSubscription<T> listen(
-    void Function(T event) onData, {
-    Function onError,
-    void Function() onDone,
-    bool cancelOnError,
-  }) {
-    scheduleMicrotask(fetch);
-    return _controller.stream.listen(
-      onData,
-      onError: onError,
-      onDone: onDone,
-      cancelOnError: cancelOnError,
-    );
-  }
-
-  bool get isBroadcast => true;
 
   @override
   _CachedFetchStream<E> asyncExpand<E>(Stream<E> Function(T event) convert) =>
@@ -128,6 +78,56 @@ class _CachedFetchStreamImpl<T> extends _CachedFetchStream<T> {
       super.where(test)._asCachedFetched(fetch, dispose);
 }
 
+class _CachedFetchStreamImpl<T> extends _CachedFetchStream<T> {
+  _CachedFetchStreamImpl(this._parent, this._saveToCache, this._loadFromCache)
+      : super._() {
+    _parent.listen((value) {
+      _controller.add(value);
+      _saveToCache(value);
+      _loadingFromCache?.cancel();
+      _loadingFromCache = _loadFromCache().listen(_controller.add);
+    }, onError: (error, stackTrace) {
+      _controller.addError(error, stackTrace);
+    }, onDone: _controller.close);
+  }
+
+  final _controller = BehaviorSubject();
+  final FetchStream<T> _parent;
+  final SaveToCache<T> _saveToCache;
+  final LoadFromCache<T> _loadFromCache;
+  StreamSubscription<T> _loadingFromCache;
+
+  void dispose() {
+    _parent.dispose();
+    _loadingFromCache.cancel();
+    _controller.close();
+  }
+
+  Future<void> fetch({bool force = false}) async {
+    if (force || !_controller.hasValue) {
+      await _parent.fetch();
+    }
+  }
+
+  @override
+  StreamSubscription<T> listen(
+    void Function(T event) onData, {
+    Function onError,
+    void Function() onDone,
+    bool cancelOnError,
+  }) {
+    scheduleMicrotask(fetch);
+    return _controller.stream.listen(
+      onData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    );
+  }
+
+  bool get isBroadcast => true;
+}
+
 extension AsCachedFetched<T> on Stream<T> {
   _ConvertedCachedFetchStream<T> _asCachedFetched(
           Future<void> Function({bool force}) rawFetcher,
@@ -153,6 +153,13 @@ class _ConvertedCachedFetchStream<T> implements _CachedFetchStream<T> {
           {Function onError, void Function() onDone, bool cancelOnError}) =>
       _parent.listen(onData,
           onError: onError, onDone: onDone, cancelOnError: cancelOnError);
+
+  _CachedFetchStream<T> cached({
+    @required SaveToCache save,
+    @required LoadFromCache load,
+  }) {
+    return _CachedFetchStream.withSaverAndLoader(this, save, load);
+  }
 
   @override
   Future<bool> any(bool Function(T element) test) => _parent.any(test);

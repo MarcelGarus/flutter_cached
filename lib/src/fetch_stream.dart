@@ -19,47 +19,6 @@ abstract class FetchStream<T> extends Stream<T> {
 
   Future<void> fetch();
   void dispose();
-}
-
-class _FetchStreamImpl<T> extends FetchStream<T> {
-  _FetchStreamImpl(this._fetcher) : super._();
-
-  final _controller = BehaviorSubject();
-  final Fetcher<T> _fetcher;
-  bool _isFetching = false;
-
-  void dispose() => _controller.close();
-
-  Future<void> fetch() async {
-    if (_isFetching) return;
-
-    _isFetching = true;
-
-    final result = await _fetcher();
-    _controller.add(result);
-
-    _isFetching = false;
-  }
-
-  @override
-  StreamSubscription<T> listen(
-    void Function(T event) onData, {
-    Function onError,
-    void Function() onDone,
-    bool cancelOnError,
-  }) {
-    if (_controller.value == null) {
-      fetch();
-    }
-    return _controller.stream.listen(
-      onData,
-      onError: onError,
-      onDone: onDone,
-      cancelOnError: cancelOnError,
-    );
-  }
-
-  bool get isBroadcast => true;
 
   _CachedFetchStream<T> cached({
     @required SaveToCache save,
@@ -126,6 +85,47 @@ class _FetchStreamImpl<T> extends FetchStream<T> {
       super.where(test)._asFetched(fetch, dispose);
 }
 
+class _FetchStreamImpl<T> extends FetchStream<T> {
+  _FetchStreamImpl(this._fetcher) : super._();
+
+  final _controller = BehaviorSubject();
+  final Fetcher<T> _fetcher;
+  bool _isFetching = false;
+
+  void dispose() => _controller.close();
+
+  Future<void> fetch() async {
+    if (_isFetching) return;
+
+    _isFetching = true;
+
+    final result = await _fetcher();
+    _controller.add(result);
+
+    _isFetching = false;
+  }
+
+  @override
+  StreamSubscription<T> listen(
+    void Function(T event) onData, {
+    Function onError,
+    void Function() onDone,
+    bool cancelOnError,
+  }) {
+    if (_controller.value == null) {
+      fetch();
+    }
+    return _controller.stream.listen(
+      onData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    );
+  }
+
+  bool get isBroadcast => true;
+}
+
 extension AsFetched<T> on Stream<T> {
   _ConvertedFetchStream<T> _asFetched(
           Future<void> Function() rawFetcher, VoidCallback disposer) =>
@@ -150,6 +150,13 @@ class _ConvertedFetchStream<T> implements FetchStream<T> {
           {Function onError, void Function() onDone, bool cancelOnError}) =>
       _parent.listen(onData,
           onError: onError, onDone: onDone, cancelOnError: cancelOnError);
+
+  _CachedFetchStream<T> cached({
+    @required SaveToCache save,
+    @required LoadFromCache load,
+  }) {
+    return _CachedFetchStream.withSaverAndLoader(this, save, load);
+  }
 
   @override
   Future<bool> any(bool Function(T element) test) => _parent.any(test);
