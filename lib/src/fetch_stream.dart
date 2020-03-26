@@ -69,58 +69,60 @@ class _FetchStreamImpl<T> extends FetchStream<T> {
   }
 
   @override
-  Stream<E> asyncExpand<E>(Stream<E> Function(T event) convert) =>
+  FetchStream<E> asyncExpand<E>(Stream<E> Function(T event) convert) =>
       super.asyncExpand(convert)._asFetched(fetch, dispose);
 
   @override
-  Stream<E> asyncMap<E>(FutureOr<E> Function(T event) convert) =>
+  FetchStream<E> asyncMap<E>(FutureOr<E> Function(T event) convert) =>
       super.asyncMap(convert)._asFetched(fetch, dispose);
 
   @override
-  Stream<R> cast<R>() => super.cast<R>()._asFetched(fetch, dispose);
+  FetchStream<R> cast<R>() => super.cast<R>()._asFetched(fetch, dispose);
 
   @override
-  Stream<T> distinct([bool Function(T previous, T next) equals]) =>
+  FetchStream<T> distinct([bool Function(T previous, T next) equals]) =>
       super.distinct(equals)._asFetched(fetch, dispose);
 
   @override
-  Stream<S> expand<S>(Iterable<S> Function(T element) convert) =>
+  FetchStream<S> expand<S>(Iterable<S> Function(T element) convert) =>
       super.expand(convert)._asFetched(fetch, dispose);
 
   @override
-  Stream<T> handleError(Function onError,
+  FetchStream<T> handleError(Function onError,
           {bool Function(dynamic error) test}) =>
       super.handleError(onError, test: test)._asFetched(fetch, dispose);
 
   @override
-  Stream<S> map<S>(S Function(T event) convert) =>
+  FetchStream<S> map<S>(S Function(T event) convert) =>
       super.map(convert)._asFetched(fetch, dispose);
 
   @override
-  Stream<T> skip(int count) => super.skip(count)._asFetched(fetch, dispose);
+  FetchStream<T> skip(int count) =>
+      super.skip(count)._asFetched(fetch, dispose);
 
   @override
-  Stream<T> skipWhile(bool Function(T element) test) =>
+  FetchStream<T> skipWhile(bool Function(T element) test) =>
       super.skipWhile(test)._asFetched(fetch, dispose);
 
   @override
-  Stream<T> take(int count) => super.take(count)._asFetched(fetch, dispose);
+  FetchStream<T> take(int count) =>
+      super.take(count)._asFetched(fetch, dispose);
 
   @override
-  Stream<T> takeWhile(bool Function(T element) test) =>
+  FetchStream<T> takeWhile(bool Function(T element) test) =>
       super.takeWhile(test)._asFetched(fetch, dispose);
 
   @override
-  Stream<T> timeout(Duration timeLimit,
+  FetchStream<T> timeout(Duration timeLimit,
           {void Function(EventSink<T> sink) onTimeout}) =>
       super.timeout(timeLimit)._asFetched(fetch, dispose);
 
   @override
-  Stream<S> transform<S>(StreamTransformer<T, S> streamTransformer) =>
+  FetchStream<S> transform<S>(StreamTransformer<T, S> streamTransformer) =>
       super.transform(streamTransformer)._asFetched(fetch, dispose);
 
   @override
-  Stream<T> where(bool Function(T event) test) =>
+  FetchStream<T> where(bool Function(T event) test) =>
       super.where(test)._asFetched(fetch, dispose);
 }
 
@@ -133,7 +135,7 @@ extension AsFetched<T> on Stream<T> {
 class _ConvertedFetchStream<T> implements FetchStream<T> {
   _ConvertedFetchStream(this._parent, this._rawFetcher, this._disposer);
 
-  Stream<T> _parent;
+  FetchStream<T> _parent;
   Future<void> Function() _rawFetcher;
   VoidCallback _disposer;
 
@@ -153,27 +155,28 @@ class _ConvertedFetchStream<T> implements FetchStream<T> {
   Future<bool> any(bool Function(T element) test) => _parent.any(test);
 
   @override
-  Stream<T> asBroadcastStream(
+  FetchStream<T> asBroadcastStream(
           {void Function(StreamSubscription<T> subscription) onListen,
           void Function(StreamSubscription<T> subscription) onCancel}) =>
       _parent.asBroadcastStream()._asFetched(_rawFetcher, _disposer);
 
   @override
-  Stream<E> asyncExpand<E>(Stream<E> Function(T event) convert) =>
+  FetchStream<E> asyncExpand<E>(Stream<E> Function(T event) convert) =>
       _parent.asyncExpand(convert)._asFetched(_rawFetcher, _disposer);
 
   @override
-  Stream<E> asyncMap<E>(FutureOr<E> Function(T event) convert) =>
+  FetchStream<E> asyncMap<E>(FutureOr<E> Function(T event) convert) =>
       _parent.asyncMap(convert)._asFetched(_rawFetcher, _disposer);
 
   @override
-  Stream<R> cast<R>() => _parent.cast<R>()._asFetched(_rawFetcher, _disposer);
+  FetchStream<R> cast<R>() =>
+      _parent.cast<R>()._asFetched(_rawFetcher, _disposer);
 
   @override
   Future<bool> contains(Object needle) => _parent.contains(needle);
 
   @override
-  Stream<T> distinct([bool Function(T previous, T next) equals]) =>
+  FetchStream<T> distinct([bool Function(T previous, T next) equals]) =>
       _parent.distinct(equals)._asFetched(_rawFetcher, _disposer);
 
   @override
@@ -186,7 +189,7 @@ class _ConvertedFetchStream<T> implements FetchStream<T> {
   Future<bool> every(bool Function(T element) test) => _parent.every(test);
 
   @override
-  Stream<S> expand<S>(Iterable<S> Function(T element) convert) =>
+  FetchStream<S> expand<S>(Iterable<S> Function(T element) convert) =>
       _parent.expand(convert)._asFetched(_rawFetcher, _disposer);
 
   @override
@@ -205,7 +208,7 @@ class _ConvertedFetchStream<T> implements FetchStream<T> {
   Future forEach(void Function(T element) action) => _parent.forEach(action);
 
   @override
-  Stream<T> handleError(Function onError,
+  FetchStream<T> handleError(Function onError,
           {bool Function(dynamic error) test}) =>
       _parent
           .handleError(onError, test: test)
@@ -231,7 +234,7 @@ class _ConvertedFetchStream<T> implements FetchStream<T> {
   Future<int> get length => _parent.length;
 
   @override
-  Stream<S> map<S>(S Function(T event) convert) =>
+  FetchStream<S> map<S>(S Function(T event) convert) =>
       _parent.map(convert)._asFetched(_rawFetcher, _disposer);
 
   @override
@@ -249,23 +252,23 @@ class _ConvertedFetchStream<T> implements FetchStream<T> {
       _parent.singleWhere(test, orElse: orElse);
 
   @override
-  Stream<T> skip(int count) =>
+  FetchStream<T> skip(int count) =>
       _parent.skip(count)._asFetched(_rawFetcher, _disposer);
 
   @override
-  Stream<T> skipWhile(bool Function(T element) test) =>
+  FetchStream<T> skipWhile(bool Function(T element) test) =>
       _parent.skipWhile(test)._asFetched(_rawFetcher, _disposer);
 
   @override
-  Stream<T> take(int count) =>
+  FetchStream<T> take(int count) =>
       _parent.take(count)._asFetched(_rawFetcher, _disposer);
 
   @override
-  Stream<T> takeWhile(bool Function(T element) test) =>
+  FetchStream<T> takeWhile(bool Function(T element) test) =>
       _parent.takeWhile(test)._asFetched(_rawFetcher, _disposer);
 
   @override
-  Stream<T> timeout(Duration timeLimit,
+  FetchStream<T> timeout(Duration timeLimit,
           {void Function(EventSink<T> sink) onTimeout}) =>
       _parent.timeout(timeLimit)._asFetched(_rawFetcher, _disposer);
 
@@ -276,10 +279,10 @@ class _ConvertedFetchStream<T> implements FetchStream<T> {
   Future<Set<T>> toSet() => _parent.toSet();
 
   @override
-  Stream<S> transform<S>(StreamTransformer<T, S> streamTransformer) =>
+  FetchStream<S> transform<S>(StreamTransformer<T, S> streamTransformer) =>
       _parent.transform(streamTransformer)._asFetched(_rawFetcher, _disposer);
 
   @override
-  Stream<T> where(bool Function(T event) test) =>
+  FetchStream<T> where(bool Function(T event) test) =>
       _parent.where(test)._asFetched(_rawFetcher, _disposer);
 }
