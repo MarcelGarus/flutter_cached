@@ -17,7 +17,7 @@ extension CachedFetchStream<T>
     return StreamAndData(data._controller.stream, data);
   }
 
-  void fetch({bool force = false}) => data.fetch(force);
+  Future<void> fetch({bool force = false}) => data.fetch(force);
   void dispose() => data.dispose();
 
   StreamAndData<T, CachedFetchStreamData<dynamic>> cached() {}
