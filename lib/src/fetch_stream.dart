@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_cached/src/stream_and_data.dart';
@@ -46,7 +45,10 @@ class FetchStreamData<T> {
     _isFetching = true;
 
     final result = await _fetcher();
-    _controller.add(result);
+
+    if (!_controller.isClosed) {
+      _controller.add(result);
+    }
 
     _isFetching = false;
   }
