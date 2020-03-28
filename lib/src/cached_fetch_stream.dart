@@ -20,7 +20,7 @@ extension CachedFetchStream<T>
   Future<void> fetch({bool force = false}) => data.fetch(force);
   void dispose() => data.dispose();
 
-  StreamAndData<T, CachedFetchStreamData<dynamic>> cached() {}
+  StreamAndData<T, CachedFetchStreamData<dynamic>> cached() => this;
 }
 
 class CachedFetchStreamData<T> {
