@@ -47,12 +47,17 @@ class FetchStreamData<T> {
     T result;
     try {
       result = await _fetcher();
+      if (result == null) {
+        throw Exception("FetchStream's fetcher returned null.");
+      }
 
       if (!_controller.isClosed) {
         _controller.add(result);
       }
     } catch (e, st) {
-      _controller.addError(e, st);
+      if (!_controller.isClosed) {
+        _controller.addError(e, st);
+      }
     }
 
     _isFetching = false;
