@@ -44,7 +44,7 @@ class CachedFetchStreamData<T> {
 
   void dispose() {
     _parent.dispose();
-    _loadingFromCache.cancel();
+    _loadingFromCache?.cancel();
     _controller.close();
   }
 
