@@ -47,12 +47,12 @@ class FetchStreamData<T> {
     T result;
     try {
       result = await _fetcher();
+
+      if (!_controller.isClosed) {
+        _controller.add(result);
+      }
     } catch (e, st) {
       _controller.addError(e, st);
-    }
-
-    if (!_controller.isClosed) {
-      _controller.add(result);
     }
 
     _isFetching = false;
