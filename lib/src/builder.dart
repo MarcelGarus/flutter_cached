@@ -55,15 +55,22 @@ class _ScopedBuilderState<T> extends State<ScopedBuilder<T>> {
 }
 
 class CacheSnapshot<T> {
-  CacheSnapshot({this.data, this.error, this.stackTrace})
+  CacheSnapshot({this.data, this.hasData, this.error, this.stackTrace})
       : assert(stackTrace == null || error != null);
 
   final T data;
-  bool get hasData => data != null;
+  final bool hasData;
+  bool get hasNoData => !hasData;
 
   final dynamic error;
   final StackTrace stackTrace;
   bool get hasError => error != null;
+}
+
+/// Wrapper around a value of type [T] which may be null.
+class Existing<T> {
+  Existing(this.value);
+  final T value;
 }
 
 class CachedBuilder<T> extends StatelessWidget {
@@ -78,35 +85,35 @@ class CachedBuilder<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<T>(
-      stream: stream.handleError(
-        (error, stackTrace) => throw ErrorAndStacktrace(error, stackTrace),
-      ),
+    Existing<T> latestValue;
+
+    return StreamBuilder<Existing<T>>(
+      // What you're looking at here is lots of frustration with Flutter's
+      // `StreamBuilder`: It doesn't support `StackTrace`s although Dart's
+      // `Stream`s do. And it makes no distinction between no data and `null`
+      // as data, although Dart's `Stream`s can contain null. I opened issues
+      // for both of these, so we can do nothing but wait.
+      // - https://github.com/flutter/flutter/issues/53384
+      // - https://github.com/flutter/flutter/issues/53682
+      stream: stream.handleError((error, stackTrace) {
+        throw ErrorAndStacktrace(error, stackTrace);
+      }).map((data) {
+        latestValue = Existing(data);
+        return latestValue;
+      }),
       builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          return builder(
-            context,
-            CacheSnapshot(data: snapshot.data),
-            stream.fetch,
-          );
-        } else if (snapshot.hasError) {
-          final errorAndStackTrace = snapshot.error as ErrorAndStacktrace;
-          return builder(
-            context,
-            CacheSnapshot(
-              data: stream.latestValue,
-              error: errorAndStackTrace.error,
-              stackTrace: errorAndStackTrace.stackTrace,
-            ),
-            stream.fetch,
-          );
-        } else {
-          return builder(
-            context,
-            CacheSnapshot(data: stream.latestValue),
-            stream.fetch,
-          );
-        }
+        final errorAndStackTrace = snapshot.error as ErrorAndStacktrace;
+
+        return builder(
+          context,
+          CacheSnapshot(
+            data: latestValue?.value,
+            hasData: latestValue != null,
+            error: errorAndStackTrace?.error,
+            stackTrace: errorAndStackTrace?.stackTrace,
+          ),
+          stream.fetch,
+        );
       },
     );
   }
