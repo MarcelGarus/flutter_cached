@@ -17,7 +17,7 @@ extension FetchStream<T> on StreamAndData<T, FetchStreamData<dynamic>> {
   static StreamAndData<T, FetchStreamData<dynamic>> create<T>(
       Fetcher<T> fetcher) {
     final data = FetchStreamData<T>(fetcher);
-    return StreamAndData(data._controller.stream, data);
+    return StreamAndData(data._controller.stream.distinct(), data);
   }
 
   Future<void> fetch() => data.fetch();

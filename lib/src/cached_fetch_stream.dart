@@ -14,7 +14,7 @@ extension CachedFetchStream<T>
     LoadFromCache<T> load,
   ) {
     final data = CachedFetchStreamData(parent, save, load);
-    return StreamAndData(data._controller.stream, data);
+    return StreamAndData(data._controller.stream.distinct(), data);
   }
 
   Future<void> fetch({bool force = false}) => data.fetch(force);
