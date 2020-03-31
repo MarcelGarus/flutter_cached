@@ -59,8 +59,11 @@ class CacheSnapshot<T> {
       : assert(stackTrace == null || error != null);
 
   final T data;
+  bool get hasData => data != null;
+
   final dynamic error;
   final StackTrace stackTrace;
+  bool get hasError => error != null;
 }
 
 class CachedBuilder<T> extends StatelessWidget {
