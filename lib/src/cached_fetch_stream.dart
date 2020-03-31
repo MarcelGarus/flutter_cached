@@ -20,6 +20,8 @@ extension CachedFetchStream<T>
   Future<void> fetch({bool force = false}) => data.fetch(force);
   void dispose() => data.dispose();
 
+  T get latestValue => data.latestValue;
+
   StreamAndData<T, CachedFetchStreamData<dynamic>> cached() => this;
 }
 
@@ -41,6 +43,8 @@ class CachedFetchStreamData<T> {
   final SaveToCache<T> _saveToCache;
   final LoadFromCache<T> _loadFromCache;
   StreamSubscription<T> _loadingFromCache;
+
+  T get latestValue => _controller.value;
 
   void dispose() {
     _parent.dispose();
