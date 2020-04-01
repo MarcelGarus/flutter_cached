@@ -26,7 +26,10 @@ extension CachedFetchStream<T>
 }
 
 class CachedFetchStreamData<T> {
-  CachedFetchStreamData(this._parent, this._saveToCache, this._loadFromCache) {
+  CachedFetchStreamData(this._parent, this._saveToCache, this._loadFromCache)
+      : assert(_parent != null),
+        assert(_saveToCache != null),
+        assert(_loadFromCache != null) {
     // Whenever a new value got fetched, it gets saved to the cache.
     _parent.listen((value) {
       _controller.add(value);
@@ -53,14 +56,14 @@ class CachedFetchStreamData<T> {
   }
 
   Future<void> fetch(bool force) async {
-    if (force || !loadFromCache() && !_controller.hasValue) {
+    if (force || !(await loadFromCache()) && !_controller.hasValue) {
       await _parent.fetch();
     }
   }
 
   /// Loads the value from the cache. Returns whether the [_loadFromCache]
   /// returned a synchronous stream and immediately yielded data.
-  bool loadFromCache() {
+  Future<bool> loadFromCache() async {
     var immediatelyReturnedData = false;
 
     _loadingFromCache?.cancel();
@@ -69,6 +72,7 @@ class CachedFetchStreamData<T> {
       immediatelyReturnedData = true;
     });
 
+    await Future.delayed(Duration(milliseconds: 100));
     return immediatelyReturnedData;
   }
 }

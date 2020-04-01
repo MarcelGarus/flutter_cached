@@ -31,7 +31,7 @@ extension FetchStream<T> on StreamAndData<T, FetchStreamData<dynamic>> {
 }
 
 class FetchStreamData<T> {
-  FetchStreamData(this._fetcher);
+  FetchStreamData(this._fetcher) : assert(_fetcher != null);
 
   final _controller = BehaviorSubject<T>();
   final Fetcher<T> _fetcher;
