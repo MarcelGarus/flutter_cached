@@ -65,14 +65,16 @@ class CachedFetchStreamData<T> {
   /// returned a synchronous stream and immediately yielded data.
   Future<bool> loadFromCache() async {
     var immediatelyReturnedData = false;
+    final completer = Completer();
 
     _loadingFromCache?.cancel();
     _loadingFromCache = _loadFromCache().listen((data) {
       _controller.add(data);
       immediatelyReturnedData = true;
+      completer.complete();
     });
 
-    await Future.delayed(Duration(milliseconds: 100));
+    await completer.future.timeout(Duration(milliseconds: 100));
     return immediatelyReturnedData;
   }
 }
