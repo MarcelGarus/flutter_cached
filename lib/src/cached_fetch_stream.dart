@@ -74,7 +74,8 @@ class CachedFetchStreamData<T> {
       completer.complete();
     });
 
-    await completer.future.timeout(Duration(milliseconds: 100));
+    await completer.future
+        .timeout(Duration(milliseconds: 100), onTimeout: () {});
     return immediatelyReturnedData;
   }
 }
