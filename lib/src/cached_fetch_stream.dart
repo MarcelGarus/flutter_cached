@@ -70,8 +70,10 @@ class CachedFetchStreamData<T> {
     _loadingFromCache?.cancel();
     _loadingFromCache = _loadFromCache().listen((data) {
       _controller.add(data);
-      immediatelyReturnedData = true;
-      completer.complete();
+      if (!immediatelyReturnedData) {
+        immediatelyReturnedData = true;
+        completer.complete();
+      }
     });
 
     await completer.future
