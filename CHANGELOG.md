@@ -1,3 +1,7 @@
+## [5.0.0] - 2020-04-27
+
+* Complete rewrite.
+
 ## [4.2.7] - 2020-03-12
 
 * Add `StreamedCacheController`.

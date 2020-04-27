@@ -1,48 +1,16 @@
-import 'package:flutter/material.dart';
-import 'package:pull_to_refresh/pull_to_refresh.dart';
+// import 'package:flutter/material.dart';
+// import 'package:pull_to_refresh/pull_to_refresh.dart';
 
-import 'controller.dart';
-import 'update.dart';
+// import 'fetch_stream.dart';
+// import 'update.dart';
 
-const _defaultFadeDuration = Duration(milliseconds: 200);
+// const _defaultFadeDuration = Duration(milliseconds: 200);
 
-Widget _defaultLoadingScreenBuilder(BuildContext _) =>
-    Center(child: CircularProgressIndicator());
+// Widget _defaultLoadingScreenBuilder(BuildContext _) =>
+//     Center(child: CircularProgressIndicator());
 
-typedef ErrorBuilder = Widget Function(
-    BuildContext context, dynamic error, StackTrace stackTrace);
-
-/// Takes a [CacheController] and a [builder] and asks the builder to rebuild
-/// every time a new [CacheUpdate] is emitted from the [CacheController].
-class CachedRawBuilder<T> extends StatelessWidget {
-  CachedRawBuilder({
-    Key key,
-    @required this.controller,
-    @required this.builder,
-  })  : assert(controller != null),
-        assert(builder != null),
-        super(key: key);
-
-  final CacheController<T> controller;
-
-  /// A function that receives raw [CacheUpdate]s and returns a widget to
-  /// build. [update] is guaranteed to be non-null.
-  final Widget Function(BuildContext context, CacheUpdate<T> update) builder;
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<CacheUpdate<T>>(
-      stream: controller.updates,
-      builder: (context, snapshot) {
-        final update = snapshot.data;
-
-        final content = builder(context, update ?? CacheUpdate.inital());
-        assert(content != null, 'The builder should never return null.');
-        return content;
-      },
-    );
-  }
-}
+// typedef ErrorBuilder = Widget Function(
+//     BuildContext context, dynamic error, StackTrace stackTrace);
 
 /// Displays content with pull-to-refresh feature. Fires the
 /// [CacheController]'s fetch function when building for the first time and
@@ -50,7 +18,7 @@ class CachedRawBuilder<T> extends StatelessWidget {
 /// above the refresh indicator and [bodySliversBuilder] below it. Calls to
 /// these builders are guaranteed to provide updates with data or an error or
 /// both. Otherwise, the [loadingScreenBuilder] is called instead.
-class CachedBuilder<T> extends StatefulWidget {
+/*class CachedBuilder<T> extends StatefulWidget {
   /// The [CacheController] to be used as a data provider.
   final CacheController<T> controller;
 
@@ -260,4 +228,4 @@ class PaginatedListView<T, State extends PaginationState>
       },
     );
   }
-}
+}*/

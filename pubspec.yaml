@@ -1,16 +1,19 @@
 name: flutter_cached
 description: "🧾 Flutter widget allowing cache-based data display featuring swipe-to-refresh and an error banner."
-version: 4.2.7
+version: 5.0.0
 homepage: https://github.com/marcelgarus/flutter_cached
 
 environment:
-  sdk: ">=2.2.2 <3.0.0"
+  sdk: ">=2.6.0 <3.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  pull_to_refresh: ^1.5.6
+
+  maybe: ^0.4.0
   meta: ^1.1.7
+  pull_to_refresh: ^1.5.6
+  rxdart: ^0.23.1
 
 dev_dependencies:
   flutter_test:

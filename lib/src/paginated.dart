@@ -1,6 +1,8 @@
-part of 'controller.dart';
+part of 'fetch_stream.dart';
 
-abstract class PaginationState {
+// Coming soon. Stay tuned.
+
+/*abstract class PaginationState {
   PaginationState._();
 
   bool get isDone;
@@ -114,4 +116,4 @@ class PaginatedCacheController<T, State extends PaginationState>
 
     return lastUpdate;
   }
-}
+}*/
