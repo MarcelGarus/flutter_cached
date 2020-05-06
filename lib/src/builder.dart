@@ -65,6 +65,7 @@ class CacheSnapshot<T> {
   final dynamic error;
   final StackTrace stackTrace;
   bool get hasError => error != null;
+  bool get hasNoError => !hasError;
 }
 
 /// Wrapper around a value of type [T] which may be null.
