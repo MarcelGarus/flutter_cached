@@ -1,3 +1,7 @@
+## [5.0.1] - 2020-05-06
+
+* Add `hasNoData` getter to `CacheSnapshot`.
+
 ## [5.0.0] - 2020-04-27
 
 * Complete rewrite.
