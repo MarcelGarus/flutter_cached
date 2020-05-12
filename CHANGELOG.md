@@ -1,3 +1,7 @@
+## [5.0.2] - 2020-05-12
+
+* Update `rxdart` dependency.
+
 ## [5.0.1] - 2020-05-06
 
 * Add `hasNoData` getter to `CacheSnapshot`.
