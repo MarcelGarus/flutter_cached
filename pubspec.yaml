@@ -13,7 +13,7 @@ dependencies:
   maybe: ^0.4.0
   meta: ^1.1.7
   pull_to_refresh: ^1.5.6
-  rxdart: ^0.23.1
+  rxdart: ^0.24.0
 
 dev_dependencies:
   flutter_test:
